@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Real-Time and Secure Peer to Peer Chat" />
+    <meta property="og:title" content="Pitopi" />
+    <meta property="og:description" content="Real-Time and Secure Peer to Peer Chat" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/assets/pitopi-512.png" />
+    <title>Pitopi - Sign In</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="icon" href="/assets/pitopi-512.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="assets/tailwind.config.js"></script>
+    <link rel="stylesheet" href="assets/login.css">
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="center-glow"></div>
+
+<div style="display:flex;height:100dvh;position:relative;z-index:1;">
+
+    <!-- LEFT PANEL — desktop only -->
+    <div class="left-panel hidden lg:flex flex-col items-center justify-center flex-1">
+        <div class="left-panel-grid"></div>
+        <div class="left-panel-glow"></div>
+
+        <div class="relative z-10 text-center px-12 max-w-lg">
+
+            <h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2.2rem,3.5vw,3.2rem);letter-spacing:-.04em;line-height:.95;color:var(--text);margin-bottom:18px;">
+                Secure by<br/>
+                <span style="background:linear-gradient(135deg,#4f6ef7,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">architecture.</span>
+            </h1>
+
+            <p style="font-size:.9rem;color:var(--muted);max-width:340px;line-height:1.7;margin:0 auto 40px;">
+                No passwords. No emails. A 96-byte cryptographic key is your entire identity on Pitopi.
+            </p>
+
+            <div style="display:flex;flex-direction:column;gap:8px;max-width:300px;margin:0 auto;">
+                <div class="info-card"><span class="ok">✓</span> Messages never touch our servers</div>
+                <div class="info-card"><span class="ok">✓</span> WebRTC direct peer connection</div>
+                <div class="info-card"><span class="ok">✓</span> Zero tracking</div>
+            </div>
+        </div>
+
+        <!-- bottom branding -->
+        <div style="position:absolute;bottom:28px;left:28px;display:flex;align-items:center;gap:8px;">
+            <img src="/assets/pitopi-512.png" style="width:22px;height:22px;border-radius:6px;" alt="Pitopi"/>
+            <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:.85rem;color:var(--muted);">Pitopi</span>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL — auth -->
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;">
+        <div style="width:100%;max-width:380px;">
+
+            <!-- Mobile logo -->
+            <div class="lg:hidden text-center f1" style="margin-bottom:28px;">
+                <img src="https://aardaakpinar.github.io/assets/images/logos/pitopi.png" style="width:44px;height:44px;border-radius:12px;margin:0 auto 10px;" alt="Pitopi"/>
+                <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;color:var(--text);letter-spacing:-.02em;">Pitopi</div>
+                <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:3px;">Secure P2P Messaging</div>
+            </div>
+
+            <!-- Desktop heading -->
+            <div class="hidden lg:block f1" style="margin-bottom:24px;">
+                <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.7rem;letter-spacing:-.03em;color:var(--text);margin-bottom:6px;">Welcome back.</div>
+                <div style="font-size:.85rem;color:var(--muted);line-height:1.6;">Upload your key file to sign in, or generate a new one.</div>
+            </div>
+
+            <!-- Auth card -->
+            <div class="auth-card f2">
+                <div class="tab-row">
+                    <button id="tab-login"  onclick="switchTab('login')"  class="tab-btn active">Sign In</button>
+                    <button id="tab-signup" onclick="switchTab('signup')" class="tab-btn inactive">New Account</button>
+                </div>
+
+                <!-- LOGIN -->
+                <div id="login-panel" class="panel-body">
+                    <p class="desc">Upload your <strong style="color:var(--text);">.key file</strong> to authenticate.</p>
+
+                    <label style="display:block;">
+                        <div class="upload-zone" id="upload-zone">
+                            <i class="fas fa-key" style="font-size:1.4rem;color:var(--muted);margin-bottom:8px;display:block;"></i>
+                            <span id="file-label" style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted);">Choose your key file</span>
+                        </div>
+                        <input type="file" id="token-file" accept=".key" style="display:none;"/>
+                    </label>
+
+                    <button id="login-btn" class="btn-main" disabled>Sign In</button>
+                    <p id="login-error" class="err-msg"></p>
+                </div>
+
+                <!-- SIGNUP -->
+                <div id="signup-panel" class="panel-body" style="display:none;">
+                    <p class="desc">Generate a new <strong style="color:var(--text);">.key file</strong>. Save it somewhere safe — it's your only login credential.</p>
+
+                    <button id="signup-btn" class="btn-main" style="margin-top:0;">
+                        <i class="fas fa-download" style="margin-right:8px;"></i>Download Key File
+                    </button>
+
+                    <p style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);text-align:center;margin-top:14px;line-height:1.6;">
+                        After downloading, switch to Sign In and upload it.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Security note -->
+            <div class="sec-note f3">
+                <i class="fas fa-shield-halved"></i>
+                <span>Your key never leaves your device during login. Authentication happens via SHA-256 hash comparison.</span>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const SERVER = window.location.hostname === "pitopi.onrender.com"
+        ? "https://pitopi.onrender.com/"
+        : "http://192.168.0.21:3000/";
+
+    if (localStorage.getItem("pitopi_user_id")) {
+        window.location.href = "/";
+    }
+
+    // Tab switching
+    function switchTab(tab) {
+        const loginPanel  = document.getElementById('login-panel');
+        const signupPanel = document.getElementById('signup-panel');
+        const loginBtn    = document.getElementById('tab-login');
+        const signupBtn   = document.getElementById('tab-signup');
+
+        if (tab === 'login') {
+            loginPanel.style.display  = 'block';
+            signupPanel.style.display = 'none';
+            loginBtn.className  = 'tab-btn active';
+            signupBtn.className = 'tab-btn inactive';
+        } else {
+            loginPanel.style.display  = 'none';
+            signupPanel.style.display = 'block';
+            signupBtn.className = 'tab-btn active';
+            loginBtn.className  = 'tab-btn inactive';
+        }
+    }
+
+    // File input
+    document.getElementById('token-file').addEventListener('change', function() {
+        const file  = this.files[0];
+        const label = document.getElementById('file-label');
+        const zone  = document.getElementById('upload-zone');
+        const btn   = document.getElementById('login-btn');
+        if (file) {
+            label.textContent = file.name;
+            label.style.color = 'var(--text)';
+            zone.classList.add('active');
+            btn.disabled = false;
+        }
+    });
+
+    // Login
+    document.getElementById('login-btn').addEventListener('click', async () => {
+        const fileInput = document.getElementById('token-file');
+        const errorEl   = document.getElementById('login-error');
+        const btnEl     = document.getElementById('login-btn');
+        const file      = fileInput.files[0];
+        if (!file) return;
+
+        if (file.size !== 96) {
+            errorEl.textContent = 'Invalid key file. Please try again or generate a new one.';
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        btnEl.disabled = true;
+        btnEl.textContent = 'Signing in...';
+        errorEl.style.display = 'none';
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res  = await fetch(`${SERVER}login`, { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if (!data.success) {
+                errorEl.textContent = data.error || 'Invalid key file. Please try again or generate a new one.';
+                errorEl.style.display = 'block';
+                btnEl.disabled = false;
+                btnEl.textContent = 'Sign In';
+                return;
+            }
+
+            localStorage.setItem('pitopi_user_id', data.userId);
+            window.location.href = '/';
+        } catch (err) {
+            errorEl.textContent = 'Connection error: ' + err.message;
+            errorEl.style.display = 'block';
+            btnEl.disabled = false;
+            btnEl.textContent = 'Sign In';
+        }
+    });
+
+    // Signup
+    document.getElementById('signup-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('signup-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:8px;"></i>Generating...';
+        try {
+            const res  = await fetch(`${SERVER}signup`);
+            if (!res.ok) throw new Error('Server returned ' + res.status);
+            const blob = await res.blob();
+            const url  = URL.createObjectURL(blob);
+            const disp = res.headers.get('Content-Disposition') || '';
+            const match = disp.match(/filename="([^"]+)"/);
+            const filename = match ? match[1] : `${Date.now()}.key`;
+            const a = document.createElement('a');
+            a.href = url; a.download = filename; a.click();
+            URL.revokeObjectURL(url);
+            btn.innerHTML = '<i class="fas fa-check" style="margin-right:8px;"></i>Downloaded! Now sign in.';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-download" style="margin-right:8px;"></i>Download Key File';
+                btn.disabled = false;
+                switchTab('login');
+            }, 2000);
+        } catch (err) {
+            btn.innerHTML = '<i class="fas fa-download" style="margin-right:8px;"></i>Download Key File';
+            btn.disabled = false;
+            alert('Failed to generate key: ' + err.message);
+        }
+    });
+</script>
+</body>
+</html>

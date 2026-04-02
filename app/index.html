@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Real-Time and Secure Peer to Peer Chat" />
+    <meta property="og:title" content="Pitopi" />
+    <meta property="og:description" content="Real-Time and Secure Peer to Peer Chat" />
+    <meta property="og:url" content="/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/assets/pitopi-512.png" />
+    <title>Pitopi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="icon" href="/assets/pitopi-512.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="assets/tailwind.config.js"></script>
+    <link rel="manifest" href="manifest.json">
+</head>
+<body class="bg-light dark:bg-dark text-gray-900 dark:text-gray-100 h-dvh">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Left Sidebar - Menu -->
+        <aside class="w-20 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 flex flex-col items-center py-4 hidden md:flex">
+            <div class="mb-6">
+                <button class="w-12 h-12 rounded-full text-white flex items-center justify-center">
+                    <img src="/assets/pitopi-512.png" alt="Pitopi" class="w-full h-full">
+                </button>
+            </div>
+            <nav class="flex flex-col items-center space-y-5 flex-1">
+                <button id="btnChats" class="w-12 h-12 rounded-full flex items-center justify-center text-accent hover:bg-gray-200 dark:hover:bg-gray-800">
+                    <i class="fas fa-comment-alt text-xl"></i>
+                </button>
+                <button id="btnStorys" class="w-12 h-12 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800">
+                    <i class="fas fa-circle-notch text-xl"></i>
+                </button>
+            </nav>
+            <div>
+                <button id="btnSettings" class="w-12 h-12 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800">
+                    <img src="assets/boringavatar.svg" class="w-10 h-10 rounded-full"></img>
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Center Panel - Chats List -->
+        <div id="chats-panel" class="w-full md:w-80 lg:w-96 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 flex flex-col">
+            <!-- Search Bar -->
+            <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex">
+                <div class="search-wrapper items-center relative flex flex-1 w-full flex-nowrap flex-row">
+                    <img class="md:hidden w-10 h-10 rounded-full text-white flex items-center justify-center" src="/assets/pitopi-512.png" alt="Pitopi">
+                    <div class="relative w-full p-2">
+                        <input id="searchId" type="text" placeholder="Search..." data-i18n-placeholder="search_placeholder" class="w-full pl-4 pr-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent text-base">
+                        <div class="absolute right-4 top-4 text-gray-400">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chat Tabs -->
+             <div id="TabChat" class="flex border-b border-gray-200 dark:border-gray-800">
+                <p data-i18n="chats_tab_label" class="flex-1 py-3 p-5 font-medium">
+                    Chats
+                </p>
+            </div>
+
+            <!-- Story Tabs -->
+            <div id="TabStory" class="hidden flex border-b border-gray-200 dark:border-gray-800">
+                <p data-i18n="storys_tab_label" class="flex-1 py-3 p-5 font-medium">
+                    Storys
+                </p>
+                <button onclick="elements.storyInput.click()" class="flex-1 max-w-20 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800">
+                    <i class="fas fa-circle-plus"></i>
+                </button>
+            </div>
+
+            <!-- Settings Tabs -->
+             <div id="TabSetting" class="hidden border-b border-gray-200 dark:border-gray-800">
+                <p data-i18n="settings_tab_label" class="flex-1 py-3 p-5 font-medium">
+                    Settings
+                </p>
+            </div>
+            
+            <!-- Chats List -->
+            <div id="chats-list" class="flex-1 overflow-y-auto"></div>
+            
+            <!-- Mobile Bottom Menu -->
+            <div class="md:hidden flex border-t border-gray-200 dark:border-gray-800">
+                <button id="mobBtnChats" class="flex-1 py-3 text-accent hover:bg-gray-200 dark:hover:bg-gray-800">
+                    <i class="fas fa-comment-alt"></i>
+                </button>
+                <button id="mobBtnStorys"  class="flex-1 py-3 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800">
+                    <i class="fas fa-circle-notch"></i>
+                </button>
+                <button id="mobBtnSettings" class="flex-1 py-3 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800">
+                    <img src="assets/boringavatar.svg" class="w-8 h-8 rounded-full"></img>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Right Panel - Chat Content -->
+        <div id="chat-panel" class="hidden md:flex flex-col flex-1 md:relative fixed inset-0 mobile-chat-closed md:transform-none transition-transform duration-300 ease-in-out bg-secondaryLight dark:bg-secondaryDark">
+            <!-- No chat selected placeholder (initially visible) -->
+            <div id="no-chat-placeholder" class="flex flex-col items-center justify-center h-full">
+                <div class="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center mb-4">
+                    <i class="fas fa-comment-alt text-gray-400 text-2xl"></i>
+                </div>
+                <h3 data-i18n="select_chat_title" class="text-xl font-medium mb-2">Select a chat to start messaging</h3>
+                <p data-i18n="select_chat_description" class="text-gray-500 dark:text-gray-400 text-center max-w-md px-4">
+                    Choose from online users to begin a secure peer-to-peer conversation
+                </p>
+            </div>
+            
+            <!-- Story content (initially hidden) -->
+            <div id="story-panel" class="hidden flex-col h-full inset-0 flex flex-col items-center justify-center text-white">
+                <div class="absolute backdrop-blur-[5px] top-0 left-0 w-full px-4 py-3 flex items-center justify-between bg-light dark:bg-dark bg-opacity-50 z-40">
+                    <div class="flex items-center gap-2">
+                        <img id="story-avatar" class="w-10 h-10 rounded-full object-cover" />
+                        <span id="story-username" class="text-dark dark:text-light text-lg"></span>
+                    </div>
+                    <div class="flex gap-2 items-center">
+                        <div id="story-viewersCount"></div>
+                        <button id="delete-story-btn" class="hidden text-xl px-2 hover:text-red-400">
+                            <i class="fas fa-trash-can text-dark dark:text-light"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="story-progress-container" class="absolute top-16 left-0 w-full h-1 flex gap-1 z-40"></div>
+                <img id="story-image" class="max-w-full max-h-full object-contain z-30" />
+            </div>
+
+            <!-- Chat content (initially hidden) -->
+            <div id="chat-content" class="hidden flex-col h-full">
+                <!-- Chat Header -->
+                <div class="flex items-center px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-light dark:bg-dark">
+                    <button id="back-to-chats" class="mr-3 md:hidden">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div id="chat-avatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div id="chat-name" class="font-medium">User</div>
+                        <div id="chat-status" class="text-sm text-gray-500 dark:text-gray-400">connecting...</div>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button onclick="toggleFloatingMenu()" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Chat Messages -->
+                <div id="messages-container" class="flex-1 overflow-y-auto p-4 bg-secondaryLight dark:bg-secondaryDark"></div>
+                
+                <!-- Message Input -->
+                <div class="p-3 ">
+                    <div class="flex items-center">
+                        <div class="flex-1 bg-white dark:bg-dark rounded-full px-4 py-2 flex items-center shadow-sm">
+                            <input id="message-input" type="text" placeholder="Type a message..." data-i18n-placeholder="message_input_placeholder" class="flex-1 bg-transparent border-none focus:outline-none text-base">
+                            <label for="fileInput" class="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 ml-1">
+                                <i class="fas fa-paperclip"></i>
+                            </label>
+                        </div>
+                        <button id="send-message" class="p-2 ml-2 w-10 h-10 rounded-full bg-accent text-white flex items-center justify-center disabled:opacity-50" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="floating-menu" class="absolute right-4 top-20 bg-white dark:bg-dark shadow-lg rounded-md w-48 z-50 hidden">
+        <button id="copy-id-btn" class="w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-800 text-md rounded-md">ID'yi Kopyala</button>
+        <button id="leave-btn" class="w-full text-left px-4 py-2 hover:bg-red-200 dark:hover:bg-red-800 text-md rounded-md hidden">Bağlantıyı Kes</button>
+    </div>
+
+    <input type="file" id="uploadAvatarInput" accept="image/*" style="display: none;" />
+    <input type="file" id="fileInput" style="display: none;" />
+    <input type="file" id="storyInput" accept="image/*,video/*" style="display: none;" />
+    
+    <!-- Audio element for notifications -->
+    <audio id="notification-sound" preload="auto">
+        <source src="assets/notification.mp3" type="audio/mpeg">
+    </audio>
+    
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+    <script src="assets/virtualizedChatList.js"></script>
+    <script src="assets/app.js"></script>
+</body>
+</html>
+  
