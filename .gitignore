@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.local
+firebase-key.json
+package-lock.json
+*.log
+npm-debug.log*
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
