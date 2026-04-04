@@ -395,6 +395,8 @@ function sendMessage() {
     const text = elements.messageInput?.value.trim();
     if (!text) return;
 
+    console.log("Attempting to send message, dataChannel:", state.dataChannel, "readyState:", state.dataChannel?.readyState);
+
     if (!state.dataChannel || state.dataChannel.readyState !== "open") {
         showSystemMessage("Mesaj gönderilemedi. Bağlantı kapalı.");
         return;
@@ -527,10 +529,12 @@ function showSystemMessage(message) {
  */
 async function flushIceCandidateBuffer() {
     if (!state.peer) return;
+    console.log(`Flushing ${state.iceCandidateBuffer.length} buffered ICE candidates`);
     const buffered = state.iceCandidateBuffer.splice(0);
     for (const candidate of buffered) {
         try {
             await state.peer.addIceCandidate(new RTCIceCandidate(candidate));
+            console.log("Added buffered ICE candidate:", candidate.type);
         } catch (err) {
             console.warn("Buffer'dan ICE candidate eklenemedi:", err.message);
         }
@@ -545,19 +549,23 @@ function createPeer() {
     const config = {
         iceServers: [
             { urls: "stun:stun.l.google.com:19302" },
-            { urls: "stun:stun1.l.google.com:19302" },
+            { urls: "stun:stun1.l.google.com:19302" }
         ],
     };
 
     const peer = new RTCPeerConnection(config);
 
     peer.onicecandidate = (e) => {
-        if (e.candidate && state.remoteId) {
+        if (e.candidate) {
+            console.log("Sending ICE candidate:", e.candidate.type, e.candidate.candidate);
             socket.emit("send-ice-candidate", { targetId: state.remoteId, candidate: e.candidate });
+        } else {
+            console.log("ICE gathering complete");
         }
     };
 
     peer.ondatachannel = (e) => {
+        console.log("Received dataChannel from peer");
         state.dataChannel = e.channel;
         setupChannel();
     };
@@ -573,18 +581,25 @@ function createPeer() {
 }
 
 function setupChannel() {
-    if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false;
+    if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true; // Disable until open
 
     state.dataChannel.onopen = () => {
+        console.log("DataChannel opened successfully");
         updateStatus(CONNECTION_STATES.CONNECTED);
         localStorage.setItem(STORAGE_KEYS.CONNECTION_STATUS, "true");
+        if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false; // Enable when open
     };
 
     // onclose → handlePeerDisconnect zaten re-entry koruması var
-    state.dataChannel.onclose = () => handlePeerDisconnect();
+    state.dataChannel.onclose = () => {
+        console.log("DataChannel closed");
+        if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
+        handlePeerDisconnect();
+    };
 
     state.dataChannel.onerror = (error) => {
         console.warn("⚠️ Data channel error:", error?.error?.message || error);
+        if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
         if (state.connectionStatus) handlePeerDisconnect();
     };
 
@@ -611,6 +626,7 @@ async function startCall(id) {
 
         state.peer = createPeer();
         state.dataChannel = state.peer.createDataChannel("chat");
+        console.log("Created dataChannel for outgoing call");
         setupChannel();
         updateStatus(CONNECTION_STATES.CONNECTING);
 
@@ -1072,6 +1088,7 @@ socket.on("incoming-call", async ({ from, offer }) => {
         if (elements.chatStatus) elements.chatStatus.textContent = t("text-available");
 
         await state.peer.setRemoteDescription(new RTCSessionDescription(offer));
+        console.log("Set remote description (offer) successfully");
 
         // remoteDescription set edildi — buffer'daki candidate'leri ekle
         state.remoteDescriptionSet = true;
@@ -1094,6 +1111,7 @@ socket.on("call-answered", async ({ answer }) => {
     try {
         if (!state.peer) return;
         await state.peer.setRemoteDescription(new RTCSessionDescription(answer));
+        console.log("Set remote description (answer) successfully");
 
         // remoteDescription set edildi — buffer'daki candidate'leri ekle
         state.remoteDescriptionSet = true;
@@ -1118,6 +1136,7 @@ socket.on("call-rejected", ({ reason }) => {
 });
 
 socket.on("ice-candidate", async ({ candidate }) => {
+    console.log("Received ICE candidate:", candidate.type, candidate.candidate);
     if (!state.peer || state.peer.signalingState === "closed") {
         // Peer kapalı — sessizce yoksay
         return;
@@ -1131,6 +1150,7 @@ socket.on("ice-candidate", async ({ candidate }) => {
 
     try {
         await state.peer.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log("Added ICE candidate successfully");
     } catch (error) {
         console.warn("ICE candidate eklenemedi:", error.message);
     }
