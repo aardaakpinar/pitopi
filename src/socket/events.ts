@@ -168,7 +168,7 @@ export function setupSocketEvents(io: Server) {
     });
 
     // -------- P2P CALL HANDLING
-    socket.on("call-user", ({ targetId, offer }) => {
+    socket.on("call-user", ({ targetId, offer, cryptoPublicKey }) => {
       console.log(`📞 [${timestamp}] Call from ${socket.id} to ${targetId}`);
 
       if (isUserConnected(socket.id, activeConnections) || isUserConnected(targetId, activeConnections)) {
@@ -182,6 +182,7 @@ export function setupSocketEvents(io: Server) {
         io.to(targetUser.socketId).emit("incoming-call", {
           from: socket.id,
           offer,
+          cryptoPublicKey,
         });
       }
     });
@@ -195,15 +196,25 @@ export function setupSocketEvents(io: Server) {
       }
     });
 
-    socket.on("send-answer", ({ targetId, answer }) => {
+    socket.on("send-answer", ({ targetId, answer, cryptoPublicKey }) => {
       console.log(`✅ [${timestamp}] Call answered: ${socket.id} -> ${targetId}`);
 
       trackConnection(socket.id, targetId, activeConnections, users, io);
 
       const targetUser = users.get(targetId);
       if (targetUser) {
-        io.to(targetUser.socketId).emit("call-answered", { answer });
+        io.to(targetUser.socketId).emit("call-answered", { answer, cryptoPublicKey });
       }
+    });
+
+    socket.on("relay-message", ({ targetId, envelope }) => {
+      const targetUser = users.get(targetId);
+      if (!targetUser || !envelope || envelope.type !== "encrypted") return;
+
+      io.to(targetUser.socketId).emit("relay-message", {
+        from: socket.id,
+        envelope,
+      });
     });
 
     socket.on("send-ice-candidate", ({ targetId, candidate }) => {

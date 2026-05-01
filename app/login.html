@@ -118,7 +118,7 @@
 <script>
     const SERVER = window.location.hostname === "pitopi.onrender.com"
         ? "https://pitopi.onrender.com/"
-        : "http://192.168.0.21:3000/";
+        : `${window.location.origin}/`;
 
     if (localStorage.getItem("pitopi_user_id")) {
         window.location.href = "/";

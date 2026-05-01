@@ -37,6 +37,15 @@ setupSocketEvents(io);
 setupCleanup(io);
 
 // ==================== START SERVER ====================
+server.on("error", (error: NodeJS.ErrnoException) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(`Port ${PORT} is already in use. Stop the existing server or run with PORT=3001.`);
+    process.exit(1);
+  }
+
+  throw error;
+});
+
 server.listen(PORT, () => {
   console.log(`✨ Pitopi server running at http://localhost:${PORT}`);
 });

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pitopi-v1';
+const CACHE_NAME = 'pitopi-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -39,6 +39,21 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   if (url.pathname.startsWith('/')) {
+    if (url.pathname.endsWith('.js') || url.pathname.endsWith('.html') || url.pathname === '/') {
+      event.respondWith(
+        fetch(event.request).then((response) => {
+          if (response && response.status === 200 && response.type !== 'error') {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return response;
+        }).catch(() => caches.match(event.request).then((response) => response || caches.match('/index.html')))
+      );
+      return;
+    }
+
     event.respondWith(
       caches.match(event.request).then((response) => {
         if (response) return response;

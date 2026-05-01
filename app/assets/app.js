@@ -14,14 +14,15 @@ const CONNECTION_STATES = {
     CONNECTED: "Connection established",
     CONNECTING: "Connecting...",
     DISCONNECTED: "Connection lost",
+    FALLBACK: "Encrypted relay active",
 };
 
 const SOCKET_SERVER = (() => {
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
   if (hostname === "pitopi.onrender.com") return "https://pitopi.onrender.com/";
-  if (hostname === "localhost" || hostname === "127.0.0.1") return "http://localhost:3000/";
-  return `${protocol}//${hostname}:3000/`;
+  if (hostname === "localhost" || hostname === "127.0.0.1") return `${window.location.origin}/`;
+  return `${protocol}//${hostname}${window.location.port ? `:${window.location.port}` : ""}/`;
 })();
 const DEFAULT_PROFILE_PIC = "assets/boringavatar.svg";
 const STORY_DURATION = {
@@ -72,6 +73,13 @@ const state = {
     chats: [],
     messages: {},
     isConnected: null,
+    webrtcFallbackTimer: null,
+    crypto: {
+        localKeyPair: null,
+        localPublicKey: null,
+        remotePublicKey: null,
+        sharedKey: null,
+    },
 };
 
 const receivingFile = {
@@ -105,6 +113,8 @@ const elements = {
 
 let currentLang = localStorage.getItem(STORAGE_KEYS.LANG) || "en";
 let translations = {};
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
 
 /*
  * 5. Initialization
@@ -129,7 +139,7 @@ function initFileUpload() {
         }
 
         const reader = new FileReader();
-        reader.onload = () => {
+        reader.onload = async () => {
             const base64Data = reader.result;
             const fileMeta = {
                 type: "file",
@@ -138,24 +148,29 @@ function initFileUpload() {
                 mimeType: file.type,
                 data: base64Data,
             };
-            sendFileInChunks(fileMeta);
-            renderFilePreview(fileMeta, "me");
-            fileInput.value = "";
+            try {
+                await sendFileInChunks(fileMeta);
+                renderFilePreview(fileMeta, "me");
+                fileInput.value = "";
+            } catch (error) {
+                console.error("File send error:", error);
+                    showSystemMessage("Dosya gÃ¶nderilemedi: " + error.message);
+            }
         };
         reader.readAsDataURL(file);
     });
 }
 
-function sendFileInChunks(fileMeta) {
+async function sendFileInChunks(fileMeta) {
     const chunkSize = 16000;
     const { name, mimeType, data } = fileMeta;
     const totalChunks = Math.ceil(data.length / chunkSize);
 
-    sendSafe(state.dataChannel, JSON.stringify({ type: "file-meta", name, mimeType, totalChunks }));
+    await sendSecurePayload({ type: "file-meta", name, mimeType, totalChunks });
 
     for (let i = 0; i < totalChunks; i++) {
         const chunk = data.slice(i * chunkSize, (i + 1) * chunkSize);
-        sendSafe(state.dataChannel, JSON.stringify({ type: "file-chunk", index: i, chunk }));
+        await sendSecurePayload({ type: "file-chunk", index: i, chunk });
     }
 }
 
@@ -197,13 +212,13 @@ function initUIEventListeners() {
     let typingTimeout;
     if (elements.messageInput) {
         elements.messageInput.addEventListener("input", () => {
-            if (state.connectionStatus && state.dataChannel?.readyState === "open") {
-                try { state.dataChannel.send(JSON.stringify({ type: "typing" })); } catch (e) {}
+            if (state.connectionStatus) {
+                sendSecurePayload({ type: "typing" }).catch(() => {});
             }
             clearTimeout(typingTimeout);
             typingTimeout = setTimeout(() => {
-                if (state.connectionStatus && state.dataChannel?.readyState === "open") {
-                    try { state.dataChannel.send(JSON.stringify({ type: "stop-typing" })); } catch (e) {}
+                if (state.connectionStatus) {
+                    sendSecurePayload({ type: "stop-typing" }).catch(() => {});
                 }
             }, 2000);
         });
@@ -281,6 +296,141 @@ function sendSafe(channel, data) {
     } catch (err) {
         console.error("sendSafe hatası:", err);
     }
+}
+
+function bytesToBase64(bytes) {
+    let binary = "";
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
+}
+
+function base64ToBytes(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+}
+
+function resetSessionCrypto() {
+    state.crypto.localKeyPair = null;
+    state.crypto.localPublicKey = null;
+    state.crypto.remotePublicKey = null;
+    state.crypto.sharedKey = null;
+}
+
+function getWebCrypto() {
+    const webCrypto = globalThis.crypto;
+    if (!webCrypto?.subtle) {
+        throw new Error("E2E encryption requires HTTPS or localhost. Open Pitopi over HTTPS, or use http://localhost during development.");
+    }
+    return webCrypto;
+}
+
+async function prepareLocalCrypto() {
+    const webCrypto = getWebCrypto();
+    state.crypto.localKeyPair = await webCrypto.subtle.generateKey(
+        { name: "ECDH", namedCurve: "P-256" },
+        true,
+        ["deriveKey"]
+    );
+    const publicKey = await webCrypto.subtle.exportKey("raw", state.crypto.localKeyPair.publicKey);
+    state.crypto.localPublicKey = bytesToBase64(new Uint8Array(publicKey));
+    return state.crypto.localPublicKey;
+}
+
+async function deriveSharedKey(remotePublicKey) {
+    const webCrypto = getWebCrypto();
+    if (!state.crypto.localKeyPair) await prepareLocalCrypto();
+    state.crypto.remotePublicKey = remotePublicKey;
+    const importedRemoteKey = await webCrypto.subtle.importKey(
+        "raw",
+        base64ToBytes(remotePublicKey),
+        { name: "ECDH", namedCurve: "P-256" },
+        false,
+        []
+    );
+    state.crypto.sharedKey = await webCrypto.subtle.deriveKey(
+        { name: "ECDH", public: importedRemoteKey },
+        state.crypto.localKeyPair.privateKey,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+    );
+    if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false;
+}
+
+async function encryptPayload(payload) {
+    const webCrypto = getWebCrypto();
+    if (!state.crypto.sharedKey) throw new Error("Åifreleme anahtarÄ± hazÄ±r deÄŸil");
+    const iv = webCrypto.getRandomValues(new Uint8Array(12));
+    const ciphertext = await webCrypto.subtle.encrypt(
+        { name: "AES-GCM", iv },
+        state.crypto.sharedKey,
+        textEncoder.encode(JSON.stringify(payload))
+    );
+    return {
+        type: "encrypted",
+        version: 1,
+        iv: bytesToBase64(iv),
+        ciphertext: bytesToBase64(new Uint8Array(ciphertext)),
+    };
+}
+
+async function decryptEnvelope(envelope) {
+    const webCrypto = getWebCrypto();
+    if (!state.crypto.sharedKey) throw new Error("Åifreleme anahtarÄ± hazÄ±r deÄŸil");
+    const plaintext = await webCrypto.subtle.decrypt(
+        { name: "AES-GCM", iv: base64ToBytes(envelope.iv) },
+        state.crypto.sharedKey,
+        base64ToBytes(envelope.ciphertext)
+    );
+    return JSON.parse(textDecoder.decode(plaintext));
+}
+
+async function sendSecurePayload(payload) {
+    const envelope = await encryptPayload(payload);
+    const data = JSON.stringify(envelope);
+
+    if (state.dataChannel?.readyState === "open") {
+        state.dataChannel.send(data);
+        return;
+    }
+
+    if (state.remoteId && socket.connected) {
+        socket.emit("relay-message", { targetId: state.remoteId, envelope });
+        return;
+    }
+
+    throw new Error("Aktif taÅŸÄ±ma kanalÄ± yok");
+}
+
+function clearWebrtcFallbackTimer() {
+    if (!state.webrtcFallbackTimer) return;
+    clearTimeout(state.webrtcFallbackTimer);
+    state.webrtcFallbackTimer = null;
+}
+
+function activateEncryptedRelay() {
+    clearWebrtcFallbackTimer();
+    cleanupPeer();
+    updateStatus(CONNECTION_STATES.FALLBACK);
+    state.connectionStatus = true;
+    if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false;
+    if (elements.chatStatus) elements.chatStatus.textContent = "Encrypted relay";
+    showSystemMessage("WebRTC kurulamadÄ±. Socket.IO Ã¼zerinden ÅŸifreli yedek kanal kullanÄ±lÄ±yor.");
+}
+
+function scheduleEncryptedRelayFallback() {
+    clearWebrtcFallbackTimer();
+    state.webrtcFallbackTimer = setTimeout(() => {
+        const dataChannelOpen = state.dataChannel?.readyState === "open";
+        if (!dataChannelOpen && state.remoteId && state.crypto.sharedKey && socket.connected) {
+            activateEncryptedRelay();
+        }
+    }, 10000);
 }
 
 /*
@@ -391,19 +541,19 @@ function showOnlyTab(tab) {
 /*
  * 10. Messaging
  */
-function sendMessage() {
+async function sendMessage() {
     const text = elements.messageInput?.value.trim();
     if (!text) return;
 
     console.log("Attempting to send message, dataChannel:", state.dataChannel, "readyState:", state.dataChannel?.readyState);
 
-    if (!state.dataChannel || state.dataChannel.readyState !== "open") {
+    if (!state.remoteId || !state.crypto.sharedKey) {
         showSystemMessage("Mesaj gönderilemedi. Bağlantı kapalı.");
         return;
     }
 
     try {
-        state.dataChannel.send(JSON.stringify({ type: "text", message: text }));
+        await sendSecurePayload({ type: "text", message: text });
         logMessage(text, "me");
         elements.messageInput.value = "";
     } catch (error) {
@@ -412,11 +562,14 @@ function sendMessage() {
     }
 }
 
-function handleData(data) {
+async function handleData(data) {
     if (typeof data !== "string") return;
 
     try {
-        const msg = JSON.parse(data);
+        let msg = JSON.parse(data);
+        if (msg.type === "encrypted") {
+            msg = await decryptEnvelope(msg);
+        }
 
         if (msg.type === "file-meta") {
             receivingFile.meta = msg;
@@ -451,6 +604,40 @@ function handleData(data) {
         }
     } catch (e) {
         console.error("Error parsing message:", e);
+    }
+}
+
+function handlePlainMessage(msg) {
+    if (msg.type === "file-meta") {
+        receivingFile.meta = msg;
+        receivingFile.chunks = [];
+    } else if (msg.type === "file-chunk") {
+        receivingFile.chunks[msg.index] = msg.chunk;
+        const allReceived =
+            receivingFile.chunks.length === receivingFile.meta.totalChunks &&
+            receivingFile.chunks.every(Boolean);
+
+        if (allReceived) {
+            renderFilePreview({
+                type: "file",
+                name: receivingFile.meta.name,
+                mimeType: receivingFile.meta.mimeType,
+                data: receivingFile.chunks.join(""),
+            }, "them");
+            playNotificationSound();
+            receivingFile.meta = null;
+            receivingFile.chunks = [];
+        }
+        return;
+    }
+
+    if (msg.type === "file") { renderFilePreview(msg, "them"); playNotificationSound(); return; }
+    if (msg.type === "text") { logMessage(msg.message, "them"); playNotificationSound(); }
+    else if (msg.type === "typing") {
+        if (elements.chatStatus) { elements.chatStatus.textContent = "Yaziyor..."; elements.chatStatus.style.color = "orange"; }
+    }
+    else if (msg.type === "stop-typing") {
+        if (elements.chatStatus) { elements.chatStatus.textContent = t("text-available"); elements.chatStatus.style.color = ""; }
     }
 }
 
@@ -585,9 +772,10 @@ function setupChannel() {
 
     state.dataChannel.onopen = () => {
         console.log("DataChannel opened successfully");
+        clearWebrtcFallbackTimer();
         updateStatus(CONNECTION_STATES.CONNECTED);
         localStorage.setItem(STORAGE_KEYS.CONNECTION_STATUS, "true");
-        if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false; // Enable when open
+        if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = !state.crypto.sharedKey; // Enable when encrypted
     };
 
     // onclose → handlePeerDisconnect zaten re-entry koruması var
@@ -612,11 +800,12 @@ async function startCall(id) {
     if (state.connectionStatus) {
         const confirmReconnect = confirm("Zaten bir sohbete bağlısınız...");
         if (!confirmReconnect) return;
-        handlePeerDisconnect();
+        handlePeerDisconnect(false);
     }
 
     // Önceki peer'ı temizle
     cleanupPeer();
+    resetSessionCrypto();
 
     try {
         state.remoteId = id;
@@ -624,6 +813,7 @@ async function startCall(id) {
         state.iceCandidateBuffer = [];
         sessionStorage.setItem(STORAGE_KEYS.REMOTE_ID, id);
 
+        const cryptoPublicKey = await prepareLocalCrypto();
         state.peer = createPeer();
         state.dataChannel = state.peer.createDataChannel("chat");
         console.log("Created dataChannel for outgoing call");
@@ -643,7 +833,7 @@ async function startCall(id) {
         }
 
         await state.peer.setLocalDescription(offer);
-        socket.emit("call-user", { targetId: state.remoteId, offer });
+        socket.emit("call-user", { targetId: state.remoteId, offer, cryptoPublicKey });
 
     } catch (error) {
         if (error?.name === "InvalidStateError") {
@@ -651,7 +841,7 @@ async function startCall(id) {
             return;
         }
         console.error("Teklif hatası:", error);
-        handlePeerDisconnect();
+        handlePeerDisconnect(false);
     }
 }
 
@@ -678,12 +868,19 @@ function cleanupPeer() {
     }
 }
 
-function handlePeerDisconnect() {
+function handlePeerDisconnect(useRelayFallback = true) {
     // Re-entry koruması — çift tetiklenmeyi önler
     if (state.isDisconnecting) return;
     state.isDisconnecting = true;
 
     console.log("Peer disconnected, cleaning up...");
+    const canUseEncryptedRelay = Boolean(useRelayFallback && state.remoteId && state.crypto.sharedKey && socket.connected);
+    if (canUseEncryptedRelay) {
+        activateEncryptedRelay();
+        state.isDisconnecting = false;
+        return;
+    }
+
     updateStatus(CONNECTION_STATES.DISCONNECTED);
 
     if (state.connectionStatus) {
@@ -710,9 +907,11 @@ function handlePeerDisconnect() {
     state.selectedUser = null;
     state.iceCandidateBuffer = [];
     state.remoteDescriptionSet = false;
+    resetSessionCrypto();
 
     sessionStorage.removeItem(STORAGE_KEYS.REMOTE_ID);
     localStorage.removeItem(STORAGE_KEYS.CONNECTION_STATUS);
+    clearWebrtcFallbackTimer();
 
     if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
     renderChatsList();
@@ -832,7 +1031,7 @@ function closeStory() {
  * 14. User Chat Screen
  */
 function prepareChatUI() {
-    if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false;
+    if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
     elements.noChatPlaceholder?.classList.add("hidden");
 
     if (elements.chatContent) {
@@ -902,7 +1101,7 @@ function toggleFloatingMenu() {
             menu.classList.add("hidden");
         };
         leaveBtn.classList.remove("hidden");
-        leaveBtn.onclick = () => { handlePeerDisconnect(); menu.classList.add("hidden"); };
+        leaveBtn.onclick = () => { handlePeerDisconnect(false); menu.classList.add("hidden"); };
     }
 
     menu.classList.remove("hidden");
@@ -1028,13 +1227,13 @@ socket.on("online-users", (users) => {
 
 socket.on("peer-disconnected", ({ from }) => {
     if (state.remoteId === from) {
-        handlePeerDisconnect();
+        handlePeerDisconnect(false);
         renderChatsList();
     }
 });
 
 socket.on("user-disconnected", (userId) => {
-    if (state.connectionStatus && state.remoteId === userId) handlePeerDisconnect();
+    if (state.connectionStatus && state.remoteId === userId) handlePeerDisconnect(false);
     renderChatsList();
 });
 
@@ -1043,7 +1242,7 @@ socket.on("stories-updated", (stories) => {
     if (activeTabId === "btnStorys" || activeTabId === "mobBtnStorys") renderStoriesList(stories);
 });
 
-socket.on("incoming-call", async ({ from, offer }) => {
+socket.on("incoming-call", async ({ from, offer, cryptoPublicKey }) => {
     const caller = state.allUsers.find((u) => u.socketId === from);
     if (!caller) return;
 
@@ -1071,6 +1270,9 @@ socket.on("incoming-call", async ({ from, offer }) => {
     try {
         // Önceki peer'ı temizle
         cleanupPeer();
+        resetSessionCrypto();
+        const answerCryptoPublicKey = await prepareLocalCrypto();
+        if (cryptoPublicKey) await deriveSharedKey(cryptoPublicKey);
         state.peer = createPeer();
         updateStatus("Yanıtlanıyor...");
 
@@ -1096,32 +1298,45 @@ socket.on("incoming-call", async ({ from, offer }) => {
 
         const answer = await state.peer.createAnswer();
         await state.peer.setLocalDescription(answer);
-        socket.emit("send-answer", { targetId: state.remoteId, answer });
+        socket.emit("send-answer", { targetId: state.remoteId, answer, cryptoPublicKey: answerCryptoPublicKey });
 
         state.connectionStatus = true;
         sessionStorage.setItem(STORAGE_KEYS.REMOTE_ID, from);
+        scheduleEncryptedRelayFallback();
 
     } catch (error) {
         console.error("Gelen çağrı işlenirken hata:", error);
-        handlePeerDisconnect();
+        handlePeerDisconnect(false);
     }
 });
 
-socket.on("call-answered", async ({ answer }) => {
+socket.on("call-answered", async ({ answer, cryptoPublicKey }) => {
     try {
         if (!state.peer) return;
         await state.peer.setRemoteDescription(new RTCSessionDescription(answer));
         console.log("Set remote description (answer) successfully");
+        if (cryptoPublicKey) await deriveSharedKey(cryptoPublicKey);
 
         // remoteDescription set edildi — buffer'daki candidate'leri ekle
         state.remoteDescriptionSet = true;
         await flushIceCandidateBuffer();
 
         state.connectionStatus = true;
+        scheduleEncryptedRelayFallback();
         showToast(t("call_answered"));
     } catch (error) {
         console.error("Error handling call answer:", error);
-        handlePeerDisconnect();
+        handlePeerDisconnect(false);
+    }
+});
+
+socket.on("relay-message", async ({ from, envelope }) => {
+    if (from !== state.remoteId || !envelope) return;
+
+    try {
+        handlePlainMessage(await decryptEnvelope(envelope));
+    } catch (error) {
+        console.error("Relay message decrypt error:", error);
     }
 });
 
@@ -1129,7 +1344,9 @@ socket.on("call-rejected", ({ reason }) => {
     updateStatus("Bağlantı reddedildi: " + reason);
     showToast(t("busy"));
     sessionStorage.removeItem(STORAGE_KEYS.REMOTE_ID);
+    clearWebrtcFallbackTimer();
     cleanupPeer();
+    resetSessionCrypto();
     state.connectionStatus = false;
     state.remoteId = null;
     closeChat();
