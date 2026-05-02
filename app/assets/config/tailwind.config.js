@@ -43,7 +43,8 @@ tailwind.config = {
     },
 };
 
-document.documentElement.classList.add("dark");
-window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
-    document.documentElement.classList.toggle("dark", e.matches);
+const darkMode = window.matchMedia("(prefers-color-scheme: dark)");
+document.documentElement.classList.toggle("dark", darkMode.matches);
+darkMode.addEventListener("change", (e) => {
+  document.documentElement.classList.toggle("dark", e.matches);
 });

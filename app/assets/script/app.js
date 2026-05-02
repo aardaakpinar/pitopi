@@ -102,7 +102,6 @@ const elements = {
     get sendMessageBtn() { return document.getElementById("send-message"); },
     get backToChatBtn() { return document.getElementById("back-to-chats"); },
     get searchInput() { return document.getElementById("searchId"); },
-    get toggleThemeBtn() { return document.getElementById("toggle-theme"); },
     get storyInput() { return document.getElementById("storyInput"); },
     get uploadAvatarInput() { return document.getElementById("uploadAvatarInput"); },
 };
@@ -171,12 +170,6 @@ async function sendFileInChunks(fileMeta) {
 }
 
 function setupEventListeners() {
-    if (elements.toggleThemeBtn) {
-        elements.toggleThemeBtn.addEventListener("click", () => {
-            document.documentElement.classList.toggle("dark");
-        });
-    }
-
     if (elements.sendMessageBtn) {
         elements.sendMessageBtn.addEventListener("click", sendMessage);
     }
