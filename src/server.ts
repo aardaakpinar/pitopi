@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 // Import modules
 import { PORT } from "./config/constants.js";
-import "./config/firebase.js"; // Initialize Firebase
+import "./config/firebase.js";
 import { setupAuthRoutes } from "./auth/routes.js";
 import { setupSocketEvents, setupCleanup } from "./socket/events.js";
 
