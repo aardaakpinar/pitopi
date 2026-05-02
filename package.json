@@ -1,6 +1,6 @@
 {
   "name": "pitopi",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Secure Peer-to-Peer Chat Application with Firebase Authentication",
   "main": "src/server.ts",
   "type": "module",
@@ -19,8 +19,8 @@
     "firebase",
     "secure-messaging"
   ],
-  "author": "Pitopi Team",
-  "license": "MIT",
+  "author": "aardaakpinar",
+  "license": "GPL-3.0-only",
   "dependencies": {
     "express": "^5.2.1",
     "firebase-admin": "^13.7.0",
@@ -42,9 +42,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/pitopichat/pitopi.git"
+    "url": "https://github.com/aardaakpinar/pitopi.git"
   },
   "bugs": {
-    "url": "https://github.com/pitopichat/pitopi/issues"
+    "url": "https://github.com/aardaakpinar/pitopi/issues"
   }
 }

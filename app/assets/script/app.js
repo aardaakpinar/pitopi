@@ -24,7 +24,7 @@ const SOCKET_SERVER = (() => {
   if (hostname === "localhost" || hostname === "127.0.0.1") return `${window.location.origin}/`;
   return `${protocol}//${hostname}${window.location.port ? `:${window.location.port}` : ""}/`;
 })();
-const DEFAULT_PROFILE_PIC = "assets/boringavatar.svg";
+const DEFAULT_PROFILE_PIC = "assets/img/boringavatar.svg";
 const STORY_DURATION = {
     IMAGE: 4000,
 };
@@ -43,15 +43,11 @@ const socket = io(SOCKET_SERVER, {
  * 3. Global State
  */
 const state = {
-    // WebRTC — tek referans noktası
-    peer: null,                 // RTCPeerConnection (tek, her zaman burası kullanılır)
+    peer: null,
     dataChannel: null,
-    isDisconnecting: false,     // handlePeerDisconnect re-entry koruması
-
-    // ICE candidate buffer — remoteDescription set edilene kadar bekletir
+    isDisconnecting: false,
     iceCandidateBuffer: [],
     remoteDescriptionSet: false,
-
     receivedBuffers: [],
     incomingFileInfo: null,
     connectionStatus: false,
@@ -154,7 +150,7 @@ function initFileUpload() {
                 fileInput.value = "";
             } catch (error) {
                 console.error("File send error:", error);
-                    showSystemMessage("Dosya gÃ¶nderilemedi: " + error.message);
+                    showSystemMessage("File send failed: " + error.message);
             }
         };
         reader.readAsDataURL(file);
@@ -279,7 +275,7 @@ function renderFilePreview(fileMeta, from) {
         </div>
         <div class="flex-grow">
           <p class="text-md font-semibold text-gray-900 dark:text-gray-100 truncate">${escapeHtml(name)}</p>
-          <a href="${data}" download="${name}" class="text-sm text-blue-600 hover:underline">Dosyayı indir</a>
+          <a href="${data}" download="${name}" class="text-sm text-blue-600 hover:underline">Download File</a>
         </div>
       </div>`;
     }
@@ -291,10 +287,10 @@ function sendSafe(channel, data) {
         if (channel?.readyState === "open") {
             channel.send(data);
         } else {
-            console.warn("Kanal kapalı, mesaj gönderilemedi");
+            console.warn("Channel not open, cannot send message");
         }
     } catch (err) {
-        console.error("sendSafe hatası:", err);
+        console.error("Error sending message:", err);
     }
 }
 
@@ -364,7 +360,7 @@ async function deriveSharedKey(remotePublicKey) {
 
 async function encryptPayload(payload) {
     const webCrypto = getWebCrypto();
-    if (!state.crypto.sharedKey) throw new Error("Åifreleme anahtarÄ± hazÄ±r deÄŸil");
+    if (!state.crypto.sharedKey) throw new Error("Encryption key is not ready");
     const iv = webCrypto.getRandomValues(new Uint8Array(12));
     const ciphertext = await webCrypto.subtle.encrypt(
         { name: "AES-GCM", iv },
@@ -381,7 +377,7 @@ async function encryptPayload(payload) {
 
 async function decryptEnvelope(envelope) {
     const webCrypto = getWebCrypto();
-    if (!state.crypto.sharedKey) throw new Error("Åifreleme anahtarÄ± hazÄ±r deÄŸil");
+    if (!state.crypto.sharedKey) throw new Error("Encryption key is not ready");
     const plaintext = await webCrypto.subtle.decrypt(
         { name: "AES-GCM", iv: base64ToBytes(envelope.iv) },
         state.crypto.sharedKey,
@@ -404,7 +400,7 @@ async function sendSecurePayload(payload) {
         return;
     }
 
-    throw new Error("Aktif taÅŸÄ±ma kanalÄ± yok");
+    throw new Error("No active message channel");
 }
 
 function clearWebrtcFallbackTimer() {
@@ -420,7 +416,7 @@ function activateEncryptedRelay() {
     state.connectionStatus = true;
     if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false;
     if (elements.chatStatus) elements.chatStatus.textContent = "Encrypted relay";
-    showSystemMessage("WebRTC kurulamadÄ±. Socket.IO Ã¼zerinden ÅŸifreli yedek kanal kullanÄ±lÄ±yor.");
+    showSystemMessage("WebRTC could not be established. Using encrypted backup channel over Socket.IO.");
 }
 
 function scheduleEncryptedRelayFallback() {
@@ -710,10 +706,6 @@ function showSystemMessage(message) {
  * 11. WebRTC Functions
  */
 
-/**
- * ICE candidate buffer'ını flush et.
- * setRemoteDescription tamamlandıktan hemen sonra çağrılmalı.
- */
 async function flushIceCandidateBuffer() {
     if (!state.peer) return;
     console.log(`Flushing ${state.iceCandidateBuffer.length} buffered ICE candidates`);
@@ -728,10 +720,6 @@ async function flushIceCandidateBuffer() {
     }
 }
 
-/**
- * Tek bir yerde peer oluşturulur. activePeerConnection kaldırıldı,
- * her zaman state.peer kullanılır.
- */
 function createPeer() {
     const config = {
         iceServers: [
@@ -768,17 +756,16 @@ function createPeer() {
 }
 
 function setupChannel() {
-    if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true; // Disable until open
+    if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
 
     state.dataChannel.onopen = () => {
         console.log("DataChannel opened successfully");
         clearWebrtcFallbackTimer();
         updateStatus(CONNECTION_STATES.CONNECTED);
         localStorage.setItem(STORAGE_KEYS.CONNECTION_STATUS, "true");
-        if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = !state.crypto.sharedKey; // Enable when encrypted
+        if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = !state.crypto.sharedKey;
     };
 
-    // onclose → handlePeerDisconnect zaten re-entry koruması var
     state.dataChannel.onclose = () => {
         console.log("DataChannel closed");
         if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
@@ -803,7 +790,6 @@ async function startCall(id) {
         handlePeerDisconnect(false);
     }
 
-    // Önceki peer'ı temizle
     cleanupPeer();
     resetSessionCrypto();
 
@@ -821,7 +807,7 @@ async function startCall(id) {
         updateStatus(CONNECTION_STATES.CONNECTING);
 
         if (state.peer.signalingState !== "stable") {
-            console.warn("signalingState:", state.peer.signalingState, "— offer iptal");
+            console.warn("signalingState:", state.peer.signalingState);
             return;
         }
 
@@ -837,18 +823,14 @@ async function startCall(id) {
 
     } catch (error) {
         if (error?.name === "InvalidStateError") {
-            console.warn("Glare durumu — offer iptal edildi.");
+            console.warn("Error details:", error);
             return;
         }
-        console.error("Teklif hatası:", error);
+        console.error("Offer error:", error);
         handlePeerDisconnect(false);
     }
 }
 
-/**
- * Peer ve dataChannel event listener'larını temizler, kapatır.
- * state sıfırlamaz — sadece WebRTC kaynaklarını serbest bırakır.
- */
 function cleanupPeer() {
     if (state.dataChannel) {
         state.dataChannel.onopen = null;
@@ -869,7 +851,6 @@ function cleanupPeer() {
 }
 
 function handlePeerDisconnect(useRelayFallback = true) {
-    // Re-entry koruması — çift tetiklenmeyi önler
     if (state.isDisconnecting) return;
     state.isDisconnecting = true;
 
@@ -887,18 +868,13 @@ function handlePeerDisconnect(useRelayFallback = true) {
         showSystemMessage("Karşı taraf bağlantıyı kapattı veya bağlantı kaybedildi.");
     }
 
-    // Sunucuya bildir (listener'lar silinmeden önce)
     if (state.remoteId) {
         socket.emit("connection-ended", { targetId: state.remoteId });
     }
 
-    // WebRTC kaynaklarını temizle
     cleanupPeer();
-
-    // UI'ı kapat
     closeChat();
 
-    // State sıfırla
     state.connectionStatus = false;
     state.remoteId = null;
     state.receivedBuffers = [];
@@ -916,7 +892,6 @@ function handlePeerDisconnect(useRelayFallback = true) {
     if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
     renderChatsList();
 
-    // Korumayı kaldır — bir sonraki bağlantı için hazır
     state.isDisconnecting = false;
 }
 
@@ -1136,7 +1111,7 @@ function playNotificationSound() {
     if (!audio) {
         audio = document.createElement("audio");
         audio.id = "notification-sound";
-        audio.src = "assets/notification.mp3";
+        audio.src = "assets/sounds/notification.mp3";
         document.body.appendChild(audio);
     }
     audio.play().catch((e) => console.log("Audio play error:", e));
@@ -1247,7 +1222,6 @@ socket.on("incoming-call", async ({ from, offer, cryptoPublicKey }) => {
     if (!caller) return;
 
     if (state.connectionStatus) {
-        // Glare: ikisi aynı anda çağrıyorsa küçük ID geri çekilir
         if (state.peer?.localDescription?.type === "offer" && state.myId < from) {
             socket.emit("call-rejected", { targetId: from, reason: "Simultaneous offer" });
             return;
@@ -1268,7 +1242,6 @@ socket.on("incoming-call", async ({ from, offer, cryptoPublicKey }) => {
     state.iceCandidateBuffer = [];
 
     try {
-        // Önceki peer'ı temizle
         cleanupPeer();
         resetSessionCrypto();
         const answerCryptoPublicKey = await prepareLocalCrypto();
@@ -1276,7 +1249,6 @@ socket.on("incoming-call", async ({ from, offer, cryptoPublicKey }) => {
         state.peer = createPeer();
         updateStatus("Yanıtlanıyor...");
 
-        // Chat UI hazırla
         closeStory();
         state.activeChat = caller;
         state.selectedUser = caller;
@@ -1292,7 +1264,6 @@ socket.on("incoming-call", async ({ from, offer, cryptoPublicKey }) => {
         await state.peer.setRemoteDescription(new RTCSessionDescription(offer));
         console.log("Set remote description (offer) successfully");
 
-        // remoteDescription set edildi — buffer'daki candidate'leri ekle
         state.remoteDescriptionSet = true;
         await flushIceCandidateBuffer();
 
@@ -1305,7 +1276,7 @@ socket.on("incoming-call", async ({ from, offer, cryptoPublicKey }) => {
         scheduleEncryptedRelayFallback();
 
     } catch (error) {
-        console.error("Gelen çağrı işlenirken hata:", error);
+        console.error("Error handling incoming call:", error);
         handlePeerDisconnect(false);
     }
 });
@@ -1317,7 +1288,6 @@ socket.on("call-answered", async ({ answer, cryptoPublicKey }) => {
         console.log("Set remote description (answer) successfully");
         if (cryptoPublicKey) await deriveSharedKey(cryptoPublicKey);
 
-        // remoteDescription set edildi — buffer'daki candidate'leri ekle
         state.remoteDescriptionSet = true;
         await flushIceCandidateBuffer();
 
@@ -1355,12 +1325,10 @@ socket.on("call-rejected", ({ reason }) => {
 socket.on("ice-candidate", async ({ candidate }) => {
     console.log("Received ICE candidate:", candidate.type, candidate.candidate);
     if (!state.peer || state.peer.signalingState === "closed") {
-        // Peer kapalı — sessizce yoksay
         return;
     }
 
     if (!state.remoteDescriptionSet) {
-        // remoteDescription henüz set edilmedi — buffer'la
         state.iceCandidateBuffer.push(candidate);
         return;
     }
@@ -1369,7 +1337,7 @@ socket.on("ice-candidate", async ({ candidate }) => {
         await state.peer.addIceCandidate(new RTCIceCandidate(candidate));
         console.log("Added ICE candidate successfully");
     } catch (error) {
-        console.warn("ICE candidate eklenemedi:", error.message);
+        console.warn("Failed to add ICE candidate:", error.message);
     }
 });
 
@@ -1413,7 +1381,7 @@ window.sendMessage = sendMessage;
 /*
  * 19. Translations
  */
-fetch("assets/translations.json")
+fetch("assets/config/translations.json")
     .then((res) => res.json())
     .then((data) => {
         translations = data;

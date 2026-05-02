@@ -7,13 +7,13 @@
     <meta property="og:title" content="Pitopi" />
     <meta property="og:description" content="Real-Time and Secure Peer to Peer Chat" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/assets/pitopi-512.png" />
-    <title>Pitopi - Sign In</title>
+    <meta property="og:image" content="/assets/img/pitopi-512.png" />
+    <title>Pitopi - Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link rel="icon" href="/assets/pitopi-512.png" />
+    <link rel="icon" href="/assets/img/pitopi-512.png" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="assets/tailwind.config.js"></script>
-    <link rel="stylesheet" href="assets/login.css">
+    <script src="assets/config/tailwind.config.js"></script>
+    <link rel="stylesheet" href="assets/style/login.css">
 </head>
 <body>
 <div class="grid-bg"></div>
@@ -40,13 +40,13 @@
             <div style="display:flex;flex-direction:column;gap:8px;max-width:300px;margin:0 auto;">
                 <div class="info-card"><span class="ok">✓</span> Messages never touch our servers</div>
                 <div class="info-card"><span class="ok">✓</span> WebRTC direct peer connection</div>
-                <div class="info-card"><span class="ok">✓</span> Zero tracking</div>
+                <div class="info-card"><span class="ok">✓</span> End-to-end encryption</div>
             </div>
         </div>
 
         <!-- bottom branding -->
         <div style="position:absolute;bottom:28px;left:28px;display:flex;align-items:center;gap:8px;">
-            <img src="/assets/pitopi-512.png" style="width:22px;height:22px;border-radius:6px;" alt="Pitopi"/>
+            <img src="/assets/img/pitopi-512.png" style="width:22px;height:22px;border-radius:6px;" alt="Pitopi"/>
             <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:.85rem;color:var(--muted);">Pitopi</span>
         </div>
     </div>
@@ -57,21 +57,21 @@
 
             <!-- Mobile logo -->
             <div class="lg:hidden text-center f1" style="margin-bottom:28px;">
-                <img src="https://aardaakpinar.github.io/assets/images/logos/pitopi.png" style="width:44px;height:44px;border-radius:12px;margin:0 auto 10px;" alt="Pitopi"/>
+                <img src="assets/img/pitopi-512.png" style="width:44px;height:44px;border-radius:12px;margin:0 auto 10px;" alt="Pitopi"/>
                 <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;color:var(--text);letter-spacing:-.02em;">Pitopi</div>
                 <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:3px;">Secure P2P Messaging</div>
             </div>
 
             <!-- Desktop heading -->
             <div class="hidden lg:block f1" style="margin-bottom:24px;">
-                <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.7rem;letter-spacing:-.03em;color:var(--text);margin-bottom:6px;">Welcome back.</div>
-                <div style="font-size:.85rem;color:var(--muted);line-height:1.6;">Upload your key file to sign in, or generate a new one.</div>
+                <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.7rem;letter-spacing:-.03em;color:var(--text);margin-bottom:6px;">Welcome</div>
+                <div style="font-size:.85rem;color:var(--muted);line-height:1.6;">Upload your key file to login, or generate a new one.</div>
             </div>
 
             <!-- Auth card -->
             <div class="auth-card f2">
                 <div class="tab-row">
-                    <button id="tab-login"  onclick="switchTab('login')"  class="tab-btn active">Sign In</button>
+                    <button id="tab-login"  onclick="switchTab('login')"  class="tab-btn active">Login</button>
                     <button id="tab-signup" onclick="switchTab('signup')" class="tab-btn inactive">New Account</button>
                 </div>
 
@@ -87,7 +87,7 @@
                         <input type="file" id="token-file" accept=".key" style="display:none;"/>
                     </label>
 
-                    <button id="login-btn" class="btn-main" disabled>Sign In</button>
+                    <button id="login-btn" class="btn-main" disabled>Login</button>
                     <p id="login-error" class="err-msg"></p>
                 </div>
 
@@ -100,17 +100,10 @@
                     </button>
 
                     <p style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);text-align:center;margin-top:14px;line-height:1.6;">
-                        After downloading, switch to Sign In and upload it.
+                        After downloading, switch to Login and upload it.
                     </p>
                 </div>
             </div>
-
-            <!-- Security note -->
-            <div class="sec-note f3">
-                <i class="fas fa-shield-halved"></i>
-                <span>Your key never leaves your device during login. Authentication happens via SHA-256 hash comparison.</span>
-            </div>
-
         </div>
     </div>
 </div>
@@ -186,7 +179,7 @@
                 errorEl.textContent = data.error || 'Invalid key file. Please try again or generate a new one.';
                 errorEl.style.display = 'block';
                 btnEl.disabled = false;
-                btnEl.textContent = 'Sign In';
+                btnEl.textContent = 'Login';
                 return;
             }
 
@@ -196,7 +189,7 @@
             errorEl.textContent = 'Connection error: ' + err.message;
             errorEl.style.display = 'block';
             btnEl.disabled = false;
-            btnEl.textContent = 'Sign In';
+            btnEl.textContent = 'Login';
         }
     });
 
@@ -216,7 +209,7 @@
             const a = document.createElement('a');
             a.href = url; a.download = filename; a.click();
             URL.revokeObjectURL(url);
-            btn.innerHTML = '<i class="fas fa-check" style="margin-right:8px;"></i>Downloaded! Now sign in.';
+            btn.innerHTML = '<i class="fas fa-check" style="margin-right:8px;"></i>Downloaded! Now login.';
             setTimeout(() => {
                 btn.innerHTML = '<i class="fas fa-download" style="margin-right:8px;"></i>Download Key File';
                 btn.disabled = false;

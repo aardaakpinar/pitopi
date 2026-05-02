@@ -38,7 +38,7 @@ export function setupAuthRoutes(app: express.Application) {
     }
 
     const buffer = Buffer.concat([rawToken, salt]); // 96 byte
-    console.log("Gönderilen buffer boyutu:", buffer.length);
+    console.log("The buffer size sent:", buffer.length);
 
     res.setHeader("Content-Type", "application/octet-stream");
     res.setHeader("Content-Disposition", `attachment; filename="${Date.now()}.key"`);
