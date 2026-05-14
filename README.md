@@ -4,6 +4,9 @@
 
 Pitopi is a privacy-first, peer-to-peer chat platform where every connection is direct, encrypted, and ephemeral. Users authenticate with a 96-byte key file instead of passwords or personal information, and the server merely coordinates signaling, logging, and housekeeping while all media flows directly through WebRTC.
 
+> [!NOTE]
+> It may have shortcomings. It is still under development.
+
 ## Features
 - **Key-based sign-up/login**: `GET /signup` produces a downloadable 96-byte `.key` token; `POST /login` accepts that token via `multipart/form-data` to create or resume a user session.
 - **WebRTC-powered calls**: Socket.IO handles signaling (`call-user`, `send-answer`, `send-ice-candidate`) so peers can instantly open an end-to-end encrypted channel.
