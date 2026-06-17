@@ -47,7 +47,7 @@
         "settings_tab_label": "Settings",
         "search_placeholder": "Search...",
         "select_chat_title": "Select a chat to start messaging",
-        "select_chat_description": "Choose from online users to begin a secure peer-to-peer conversation",
+        "select_chat_description": "Choose from online users to begin a secure end-to-end encrypted conversation",
         "message_input_placeholder": "Type a message...",
         "file_limit": "File size must be less than 10MB.",
         "image_file_valid": "Please select a valid image file.",

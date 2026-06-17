@@ -14,7 +14,7 @@ const CONNECTION_STATES = {
     CONNECTED: "Connection established",
     CONNECTING: "Connecting...",
     DISCONNECTED: "Connection lost",
-    FALLBACK: "Encrypted relay active",
+    FALLBACK: "Encrypted socket active",
 };
 
 const SOCKET_SERVER = (() => {
@@ -43,11 +43,7 @@ const socket = io(SOCKET_SERVER, {
  * 3. Global State
  */
 const state = {
-    peer: null,
-    dataChannel: null,
     isDisconnecting: false,
-    iceCandidateBuffer: [],
-    remoteDescriptionSet: false,
     receivedBuffers: [],
     incomingFileInfo: null,
     connectionStatus: false,
@@ -69,7 +65,7 @@ const state = {
     chats: [],
     messages: {},
     isConnected: null,
-    webrtcFallbackTimer: null,
+    socketChatTimer: null,
     crypto: {
         localKeyPair: null,
         localPublicKey: null,
@@ -381,12 +377,6 @@ async function decryptEnvelope(envelope) {
 
 async function sendSecurePayload(payload) {
     const envelope = await encryptPayload(payload);
-    const data = JSON.stringify(envelope);
-
-    if (state.dataChannel?.readyState === "open") {
-        state.dataChannel.send(data);
-        return;
-    }
 
     if (state.remoteId && socket.connected) {
         socket.emit("relay-message", { targetId: state.remoteId, envelope });
@@ -396,30 +386,18 @@ async function sendSecurePayload(payload) {
     throw new Error("No active message channel");
 }
 
-function clearWebrtcFallbackTimer() {
-    if (!state.webrtcFallbackTimer) return;
-    clearTimeout(state.webrtcFallbackTimer);
-    state.webrtcFallbackTimer = null;
+function clearSocketChatTimer() {
+    if (!state.socketChatTimer) return;
+    clearTimeout(state.socketChatTimer);
+    state.socketChatTimer = null;
 }
 
 function activateEncryptedRelay() {
-    clearWebrtcFallbackTimer();
-    cleanupPeer();
+    clearSocketChatTimer();
     updateStatus(CONNECTION_STATES.FALLBACK);
     state.connectionStatus = true;
     if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false;
-    if (elements.chatStatus) elements.chatStatus.textContent = "Encrypted relay";
-    showSystemMessage("WebRTC could not be established. Using encrypted backup channel over Socket.IO.");
-}
-
-function scheduleEncryptedRelayFallback() {
-    clearWebrtcFallbackTimer();
-    state.webrtcFallbackTimer = setTimeout(() => {
-        const dataChannelOpen = state.dataChannel?.readyState === "open";
-        if (!dataChannelOpen && state.remoteId && state.crypto.sharedKey && socket.connected) {
-            activateEncryptedRelay();
-        }
-    }, 10000);
+    if (elements.chatStatus) elements.chatStatus.textContent = "Encrypted socket";
 }
 
 /*
@@ -533,8 +511,6 @@ function showOnlyTab(tab) {
 async function sendMessage() {
     const text = elements.messageInput?.value.trim();
     if (!text) return;
-
-    console.log("Attempting to send message, dataChannel:", state.dataChannel, "readyState:", state.dataChannel?.readyState);
 
     if (!state.remoteId || !state.crypto.sharedKey) {
         showSystemMessage("Mesaj gönderilemedi. Bağlantı kapalı.");
@@ -695,159 +671,37 @@ function showSystemMessage(message) {
     elements.messagesContainer.scrollTop = elements.messagesContainer.scrollHeight;
 }
 
-/*
- * 11. WebRTC Functions
- */
-
-async function flushIceCandidateBuffer() {
-    if (!state.peer) return;
-    console.log(`Flushing ${state.iceCandidateBuffer.length} buffered ICE candidates`);
-    const buffered = state.iceCandidateBuffer.splice(0);
-    for (const candidate of buffered) {
-        try {
-            await state.peer.addIceCandidate(new RTCIceCandidate(candidate));
-            console.log("Added buffered ICE candidate:", candidate.type);
-        } catch (err) {
-            console.warn("Buffer'dan ICE candidate eklenemedi:", err.message);
-        }
-    }
-}
-
-function createPeer() {
-    const config = {
-        iceServers: [
-            { urls: "stun:stun.l.google.com:19302" },
-            { urls: "stun:stun1.l.google.com:19302" }
-        ],
-    };
-
-    const peer = new RTCPeerConnection(config);
-
-    peer.onicecandidate = (e) => {
-        if (e.candidate) {
-            console.log("Sending ICE candidate:", e.candidate.type, e.candidate.candidate);
-            socket.emit("send-ice-candidate", { targetId: state.remoteId, candidate: e.candidate });
-        } else {
-            console.log("ICE gathering complete");
-        }
-    };
-
-    peer.ondatachannel = (e) => {
-        console.log("Received dataChannel from peer");
-        state.dataChannel = e.channel;
-        setupChannel();
-    };
-
-    peer.onconnectionstatechange = () => {
-        console.log("Connection state:", peer.connectionState);
-        if (["disconnected", "failed", "closed"].includes(peer.connectionState)) {
-            handlePeerDisconnect();
-        }
-    };
-
-    return peer;
-}
-
-function setupChannel() {
-    if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
-
-    state.dataChannel.onopen = () => {
-        console.log("DataChannel opened successfully");
-        clearWebrtcFallbackTimer();
-        updateStatus(CONNECTION_STATES.CONNECTED);
-        localStorage.setItem(STORAGE_KEYS.CONNECTION_STATUS, "true");
-        if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = !state.crypto.sharedKey;
-    };
-
-    state.dataChannel.onclose = () => {
-        console.log("DataChannel closed");
-        if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
-        handlePeerDisconnect();
-    };
-
-    state.dataChannel.onerror = (error) => {
-        console.warn("⚠️ Data channel error:", error?.error?.message || error);
-        if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
-        if (state.connectionStatus) handlePeerDisconnect();
-    };
-
-    state.dataChannel.onmessage = (e) => handleData(e.data);
-}
-
 async function startCall(id) {
     if (!id) { showToast(t("select_chat_title")); return; }
 
     if (state.connectionStatus) {
         const confirmReconnect = confirm("Zaten bir sohbete bağlısınız...");
         if (!confirmReconnect) return;
-        handlePeerDisconnect(false);
+        handleChatDisconnect(false);
     }
 
-    cleanupPeer();
     resetSessionCrypto();
 
     try {
         state.remoteId = id;
-        state.remoteDescriptionSet = false;
-        state.iceCandidateBuffer = [];
         sessionStorage.setItem(STORAGE_KEYS.REMOTE_ID, id);
 
         const cryptoPublicKey = await prepareLocalCrypto();
-        state.peer = createPeer();
-        state.dataChannel = state.peer.createDataChannel("chat");
-        console.log("Created dataChannel for outgoing call");
-        setupChannel();
         updateStatus(CONNECTION_STATES.CONNECTING);
 
-        if (state.peer.signalingState !== "stable") {
-            console.warn("signalingState:", state.peer.signalingState);
-            return;
-        }
-
-        const offer = await state.peer.createOffer();
-
-        if (state.peer.signalingState !== "stable") {
-            console.warn("signalingState setLocalDescription öncesinde değişti");
-            return;
-        }
-
-        await state.peer.setLocalDescription(offer);
-        socket.emit("call-user", { targetId: state.remoteId, offer, cryptoPublicKey });
+        socket.emit("call-user", { targetId: state.remoteId, cryptoPublicKey });
 
     } catch (error) {
-        if (error?.name === "InvalidStateError") {
-            console.warn("Error details:", error);
-            return;
-        }
-        console.error("Offer error:", error);
-        handlePeerDisconnect(false);
+        console.error("Socket chat request error:", error);
+        handleChatDisconnect(false);
     }
 }
 
-function cleanupPeer() {
-    if (state.dataChannel) {
-        state.dataChannel.onopen = null;
-        state.dataChannel.onclose = null;
-        state.dataChannel.onmessage = null;
-        state.dataChannel.onerror = null;
-        try { state.dataChannel.close(); } catch (e) {}
-        state.dataChannel = null;
-    }
-
-    if (state.peer) {
-        state.peer.onicecandidate = null;
-        state.peer.ondatachannel = null;
-        state.peer.onconnectionstatechange = null;
-        try { state.peer.close(); } catch (e) {}
-        state.peer = null;
-    }
-}
-
-function handlePeerDisconnect(useRelayFallback = true) {
+function handleChatDisconnect(useRelayFallback = true) {
     if (state.isDisconnecting) return;
     state.isDisconnecting = true;
 
-    console.log("Peer disconnected, cleaning up...");
+    console.log("Socket chat disconnected, cleaning up...");
     const canUseEncryptedRelay = Boolean(useRelayFallback && state.remoteId && state.crypto.sharedKey && socket.connected);
     if (canUseEncryptedRelay) {
         activateEncryptedRelay();
@@ -865,7 +719,6 @@ function handlePeerDisconnect(useRelayFallback = true) {
         socket.emit("connection-ended", { targetId: state.remoteId });
     }
 
-    cleanupPeer();
     closeChat();
 
     state.connectionStatus = false;
@@ -874,13 +727,11 @@ function handlePeerDisconnect(useRelayFallback = true) {
     state.incomingFileInfo = null;
     state.activeChat = null;
     state.selectedUser = null;
-    state.iceCandidateBuffer = [];
-    state.remoteDescriptionSet = false;
     resetSessionCrypto();
 
     sessionStorage.removeItem(STORAGE_KEYS.REMOTE_ID);
     localStorage.removeItem(STORAGE_KEYS.CONNECTION_STATUS);
-    clearWebrtcFallbackTimer();
+    clearSocketChatTimer();
 
     if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
     renderChatsList();
@@ -1069,7 +920,7 @@ function toggleFloatingMenu() {
             menu.classList.add("hidden");
         };
         leaveBtn.classList.remove("hidden");
-        leaveBtn.onclick = () => { handlePeerDisconnect(false); menu.classList.add("hidden"); };
+        leaveBtn.onclick = () => { handleChatDisconnect(false); menu.classList.add("hidden"); };
     }
 
     menu.classList.remove("hidden");
@@ -1193,15 +1044,15 @@ socket.on("online-users", (users) => {
     if (activeTabId === "btnChats" || activeTabId === "mobBtnChats") renderChatsList();
 });
 
-socket.on("peer-disconnected", ({ from }) => {
+socket.on("chat-disconnected", ({ from }) => {
     if (state.remoteId === from) {
-        handlePeerDisconnect(false);
+        handleChatDisconnect(false);
         renderChatsList();
     }
 });
 
 socket.on("user-disconnected", (userId) => {
-    if (state.connectionStatus && state.remoteId === userId) handlePeerDisconnect(false);
+    if (state.connectionStatus && state.remoteId === userId) handleChatDisconnect(false);
     renderChatsList();
 });
 
@@ -1210,18 +1061,13 @@ socket.on("stories-updated", (stories) => {
     if (activeTabId === "btnStorys" || activeTabId === "mobBtnStorys") renderStoriesList(stories);
 });
 
-socket.on("incoming-call", async ({ from, offer, cryptoPublicKey }) => {
+socket.on("incoming-call", async ({ from, cryptoPublicKey }) => {
     const caller = state.allUsers.find((u) => u.socketId === from);
     if (!caller) return;
 
     if (state.connectionStatus) {
-        if (state.peer?.localDescription?.type === "offer" && state.myId < from) {
-            socket.emit("call-rejected", { targetId: from, reason: "Simultaneous offer" });
-            return;
-        } else {
-            socket.emit("call-rejected", { targetId: from, reason: "Busy" });
-            return;
-        }
+        socket.emit("call-rejected", { targetId: from, reason: "Busy" });
+        return;
     }
 
     const confirmConnect = confirm(`${caller.username} ${t("confirm_connect")}`);
@@ -1231,15 +1077,10 @@ socket.on("incoming-call", async ({ from, offer, cryptoPublicKey }) => {
     }
 
     state.remoteId = from;
-    state.remoteDescriptionSet = false;
-    state.iceCandidateBuffer = [];
-
     try {
-        cleanupPeer();
         resetSessionCrypto();
         const answerCryptoPublicKey = await prepareLocalCrypto();
         if (cryptoPublicKey) await deriveSharedKey(cryptoPublicKey);
-        state.peer = createPeer();
         updateStatus("Yanıtlanıyor...");
 
         closeStory();
@@ -1254,42 +1095,28 @@ socket.on("incoming-call", async ({ from, offer, cryptoPublicKey }) => {
         }
         if (elements.chatStatus) elements.chatStatus.textContent = t("text-available");
 
-        await state.peer.setRemoteDescription(new RTCSessionDescription(offer));
-        console.log("Set remote description (offer) successfully");
-
-        state.remoteDescriptionSet = true;
-        await flushIceCandidateBuffer();
-
-        const answer = await state.peer.createAnswer();
-        await state.peer.setLocalDescription(answer);
-        socket.emit("send-answer", { targetId: state.remoteId, answer, cryptoPublicKey: answerCryptoPublicKey });
+        socket.emit("send-answer", { targetId: state.remoteId, cryptoPublicKey: answerCryptoPublicKey });
 
         state.connectionStatus = true;
         sessionStorage.setItem(STORAGE_KEYS.REMOTE_ID, from);
-        scheduleEncryptedRelayFallback();
+        activateEncryptedRelay();
 
     } catch (error) {
         console.error("Error handling incoming call:", error);
-        handlePeerDisconnect(false);
+        handleChatDisconnect(false);
     }
 });
 
-socket.on("call-answered", async ({ answer, cryptoPublicKey }) => {
+socket.on("call-answered", async ({ cryptoPublicKey }) => {
     try {
-        if (!state.peer) return;
-        await state.peer.setRemoteDescription(new RTCSessionDescription(answer));
-        console.log("Set remote description (answer) successfully");
         if (cryptoPublicKey) await deriveSharedKey(cryptoPublicKey);
 
-        state.remoteDescriptionSet = true;
-        await flushIceCandidateBuffer();
-
         state.connectionStatus = true;
-        scheduleEncryptedRelayFallback();
+        activateEncryptedRelay();
         showToast(t("call_answered"));
     } catch (error) {
         console.error("Error handling call answer:", error);
-        handlePeerDisconnect(false);
+        handleChatDisconnect(false);
     }
 });
 
@@ -1307,31 +1134,11 @@ socket.on("call-rejected", ({ reason }) => {
     updateStatus("Bağlantı reddedildi: " + reason);
     showToast(t("busy"));
     sessionStorage.removeItem(STORAGE_KEYS.REMOTE_ID);
-    clearWebrtcFallbackTimer();
-    cleanupPeer();
+    clearSocketChatTimer();
     resetSessionCrypto();
     state.connectionStatus = false;
     state.remoteId = null;
     closeChat();
-});
-
-socket.on("ice-candidate", async ({ candidate }) => {
-    console.log("Received ICE candidate:", candidate.type, candidate.candidate);
-    if (!state.peer || state.peer.signalingState === "closed") {
-        return;
-    }
-
-    if (!state.remoteDescriptionSet) {
-        state.iceCandidateBuffer.push(candidate);
-        return;
-    }
-
-    try {
-        await state.peer.addIceCandidate(new RTCIceCandidate(candidate));
-        console.log("Added ICE candidate successfully");
-    } catch (error) {
-        console.warn("Failed to add ICE candidate:", error.message);
-    }
 });
 
 /*

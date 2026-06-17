@@ -2,14 +2,14 @@
 
 ![Status](https://img.shields.io/badge/status-active-brightgreen.svg) ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-339933?logo=node.js) ![License](https://img.shields.io/badge/license-GPLv3-blue.svg) ![Firebase](https://img.shields.io/badge/service-Firebase-orange.svg)
 
-Pitopi is a privacy-first, peer-to-peer chat platform where every connection is direct, encrypted, and ephemeral. Users authenticate with a 96-byte key file instead of passwords or personal information, and the server merely coordinates signaling, logging, and housekeeping while all media flows directly through WebRTC.
+Pitopi is a privacy-first Socket.IO chat platform where messages are end-to-end encrypted before they leave the browser. Users authenticate with a 96-byte key file instead of passwords or personal information, and the server relays encrypted envelopes, logging, and housekeeping data without seeing plaintext chat content.
 
 > [!NOTE]
 > It may have shortcomings. It is still under development.
 
 ## Features
 - **Key-based sign-up/login**: `GET /signup` produces a downloadable 96-byte `.key` token; `POST /login` accepts that token via `multipart/form-data` to create or resume a user session.
-- **WebRTC-powered calls**: Socket.IO handles signaling (`call-user`, `send-answer`, `send-ice-candidate`) so peers can instantly open an end-to-end encrypted channel.
+- **Socket.IO encrypted chat**: `call-user` and `send-answer` exchange ECDH public keys, then `relay-message` forwards AES-GCM encrypted envelopes between users.
 - **Stories with expiration**: Upload, view, and delete short-lived stories that vanish after 12 hours; server-side storage tracks viewers and broadcasts totals in real time.
 - **Security-first protections**: IP rate limiting, brute-force tracking, reserved-name enforcement, periodic cleanup of stale tokens/connections, and Firebase logging for every major event.
 - **Profile & visibility controls**: Users can update profile pictures, toggle visibility, and the online roster reflects hidden/busy status immediately.
@@ -47,7 +47,7 @@ npm install
 ## Key endpoints & events
 - `GET /signup`: rate-limited generation of a `.key` token with 64 bytes of randomness + 32 bytes of salt.
 - `POST /login`: accepts a 96-byte file upload, hashes it, and ensures the user record exists in Firestore.
-- Socket.IO lifecycle events: `auth`, `stories-updated`, `call-user`, `send-answer`, `send-ice-candidate`, `connection-ended`, `update-profile-pic`, `ping`, `disconnect`, etc.
+- Socket.IO lifecycle events: `auth`, `stories-updated`, `call-user`, `send-answer`, `relay-message`, `connection-ended`, `update-profile-pic`, `ping`, `disconnect`, etc.
 - Internal cleanup: tokens older than a week are pruned, stories expire after 12 hours, stale connections/timeouts cleaned hourly.
 
 ## Testing & quality

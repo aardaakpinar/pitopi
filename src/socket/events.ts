@@ -167,8 +167,8 @@ export function setupSocketEvents(io: Server) {
       }
     });
 
-    // -------- P2P CALL HANDLING
-    socket.on("call-user", ({ targetId, offer, cryptoPublicKey }) => {
+    // -------- SOCKET CHAT HANDSHAKE
+    socket.on("call-user", ({ targetId, cryptoPublicKey }) => {
       console.log(`📞 [${timestamp}] Call from ${socket.id} to ${targetId}`);
 
       if (isUserConnected(socket.id, activeConnections) || isUserConnected(targetId, activeConnections)) {
@@ -181,7 +181,6 @@ export function setupSocketEvents(io: Server) {
       if (targetUser) {
         io.to(targetUser.socketId).emit("incoming-call", {
           from: socket.id,
-          offer,
           cryptoPublicKey,
         });
       }
@@ -196,14 +195,14 @@ export function setupSocketEvents(io: Server) {
       }
     });
 
-    socket.on("send-answer", ({ targetId, answer, cryptoPublicKey }) => {
+    socket.on("send-answer", ({ targetId, cryptoPublicKey }) => {
       console.log(`✅ [${timestamp}] Call answered: ${socket.id} -> ${targetId}`);
 
       trackConnection(socket.id, targetId, activeConnections, users, io);
 
       const targetUser = users.get(targetId);
       if (targetUser) {
-        io.to(targetUser.socketId).emit("call-answered", { answer, cryptoPublicKey });
+        io.to(targetUser.socketId).emit("call-answered", { cryptoPublicKey });
       }
     });
 
@@ -217,13 +216,6 @@ export function setupSocketEvents(io: Server) {
       });
     });
 
-    socket.on("send-ice-candidate", ({ targetId, candidate }) => {
-      const targetUser = users.get(targetId);
-      if (targetUser) {
-        io.to(targetUser.socketId).emit("ice-candidate", { candidate });
-      }
-    });
-
     socket.on("connection-ended", ({ targetId }) => {
       console.log(`🛑 [${timestamp}] Connection ended: ${socket.id} -> ${targetId}`);
 
@@ -231,7 +223,7 @@ export function setupSocketEvents(io: Server) {
 
       const targetUser = users.get(targetId);
       if (targetUser) {
-        io.to(targetUser.socketId).emit("peer-disconnected", { from: socket.id });
+        io.to(targetUser.socketId).emit("chat-disconnected", { from: socket.id });
       }
     });
 
@@ -365,7 +357,7 @@ export function setupSocketEvents(io: Server) {
 
       if (connectedPartner) {
         removeConnection(socket.id, connectedPartner, activeConnections, users, io);
-        io.to(connectedPartner).emit("peer-disconnected", { from: socket.id });
+        io.to(connectedPartner).emit("chat-disconnected", { from: socket.id });
         console.log(`ℹ️ [${timestamp}] Notified partner ${connectedPartner} about disconnect`);
       }
 

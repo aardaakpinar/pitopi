@@ -1,7 +1,7 @@
 {
   "name": "pitopi",
   "version": "1.0.1",
-  "description": "Secure Peer-to-Peer Chat Application with Firebase Authentication",
+  "description": "Secure Socket.IO Chat Application with Firebase Authentication",
   "main": "src/server.ts",
   "type": "module",
   "scripts": {
@@ -12,9 +12,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "p2p",
     "chat",
-    "webrtc",
+    "e2ee",
     "socket.io",
     "firebase",
     "secure-messaging"
