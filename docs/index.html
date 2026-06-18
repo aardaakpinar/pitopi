@@ -3,9 +3,9 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="description" content="Real-Time and Secure Peer to Peer Chat" />
+        <meta name="description" content="Real-Time and Secure Direct Chat" />
         <meta property="og:title" content="Pitopi" />
-        <meta property="og:description" content="Real-Time and Secure Peer to Peer Chat" />
+        <meta property="og:description" content="Real-Time and Secure Direct Chat" />
         <meta property="og:url" content="https://aardaakpinar.github.io/" />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://aardaakpinar.github.io/assets/images/logos/pitopi.png" />
@@ -36,7 +36,7 @@
 
             <div class="hero-badge">
                 <span></span>
-                Open source · End-to-end encrypted
+                Open source · Encrypted messaging
             </div>
 
             <h1>
@@ -45,8 +45,8 @@
             </h1>
 
             <p>
-                Pitopi enables real-time, peer-to-peer communication. 
-                Your messages go directly to the other person no middleman, no interception.
+                Pitopi enables real-time, direct communication. 
+                Your messages are relayed by the server as encrypted data, so plaintext stays out of reach.
             </p>
 
             <div class="hero-actions">
@@ -67,7 +67,7 @@
 
             <div class="stats">
                 <div class="stat">
-                    <div class="stat-value">P2P</div>
+                    <div class="stat-value">Direct</div>
                     <div class="stat-label">Architecture</div>
                 </div>
                 <div class="stat">
@@ -93,17 +93,17 @@
                     <div class="feature-icon">🔒</div>
                     <div class="feature-title">End-to-End Encrypted</div>
                     <div class="feature-desc">
-                        Messages go directly between you and the other person
-                        they never touch our servers. We can't read them even if we wanted to.
+                        Messages are encrypted in the browser before they are relayed.
+                        The server handles transport, not plaintext chat content.
                     </div>
                 </div>
 
                 <div class="feature-card">
                     <div class="feature-icon">⚡</div>
-                    <div class="feature-title">Real-Time P2P</div>
+                    <div class="feature-title">Real-Time Direct Chat</div>
                     <div class="feature-desc">
-                        WebRTC creates a direct tunnel between you and your contact.
-                        No messages pass through our servers.
+                        Socket.IO relays encrypted messages between users in real time.
+                        Plaintext is not sent through the server.
                     </div>
                 </div>
 
@@ -112,7 +112,7 @@
                     <div class="feature-title">Key-Based Auth</div>
                     <div class="feature-desc">
                         No passwords, no emails, no phone numbers. A cryptographic key file
-                        is your identity lose it and we can't help you recover it.
+                        is your identity, and if you lose it we can't recover it for you.
                     </div>
                 </div>
 
@@ -120,8 +120,8 @@
                     <div class="feature-icon">📡</div>
                     <div class="feature-title">Story Sharing</div>
                     <div class="feature-desc">
-                        Share moments that disappear in 12 hours. Viewable by anyone
-                        on the network, not stored permanently.
+                        Share moments that are cleaned up after 12 hours.
+                        Stories are stored temporarily and then removed by cleanup jobs.
                     </div>
                 </div>
 
@@ -129,8 +129,8 @@
                     <div class="feature-icon">🚫</div>
                     <div class="feature-title">No Ads. Ever.</div>
                     <div class="feature-desc">
-                        Your attention is not our product. Pitopi is free because we believe
-                        privacy should be accessible, not monetized.
+                        The current landing experience does not include ads.
+                        Privacy is the focus of the product.
                     </div>
                 </div>
 
@@ -138,8 +138,8 @@
                     <div class="feature-icon">🌐</div>
                     <div class="feature-title">Open Source</div>
                     <div class="feature-desc">
-                        Every line of code is public. Audit it, fork it, improve it.
-                        Trust through transparency, not promises.
+                        The source code is available in the repository.
+                        Audit it, fork it, and improve it.
                     </div>
                 </div>
                 </div>
@@ -179,8 +179,8 @@
                             <div class="step-content">
                                 <h4>Start a private session</h4>
                                 <p>
-                                    Click a user, accept the WebRTC handshake, and your encrypted tunnel is live.
-                                    Direct. Serverless. Instant.
+                                    Click a user, complete the Socket.IO handshake, and start exchanging encrypted messages.
+                                    Direct in the app, with server-side relaying.
                                 </p>
                             </div>
                         </div>

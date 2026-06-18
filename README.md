@@ -2,7 +2,7 @@
 
 ![Status](https://img.shields.io/badge/status-active-brightgreen.svg) ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-339933?logo=node.js) ![License](https://img.shields.io/badge/license-GPLv3-blue.svg) ![Firebase](https://img.shields.io/badge/service-Firebase-orange.svg)
 
-Pitopi is a privacy-first Socket.IO chat platform where messages are end-to-end encrypted before they leave the browser. Users authenticate with a 96-byte key file instead of passwords or personal information, and the server relays encrypted envelopes, logging, and housekeeping data without seeing plaintext chat content.
+Pitopi is a privacy-first Socket.IO chat platform where messages are encrypted before they leave the browser. Users authenticate with a 96-byte key file instead of passwords or personal information, and the server relays encrypted envelopes, logging, and housekeeping data without seeing plaintext chat content.
 
 > [!NOTE]
 > It may have shortcomings. It is still under development.
@@ -10,8 +10,8 @@ Pitopi is a privacy-first Socket.IO chat platform where messages are end-to-end 
 ## Features
 - **Key-based sign-up/login**: `GET /signup` produces a downloadable 96-byte `.key` token; `POST /login` accepts that token via `multipart/form-data` to create or resume a user session.
 - **Socket.IO encrypted chat**: `call-user` and `send-answer` exchange ECDH public keys, then `relay-message` forwards AES-GCM encrypted envelopes between users.
-- **Stories with expiration**: Upload, view, and delete short-lived stories that vanish after 12 hours; server-side storage tracks viewers and broadcasts totals in real time.
-- **Security-first protections**: IP rate limiting, brute-force tracking, reserved-name enforcement, periodic cleanup of stale tokens/connections, and Firebase logging for every major event.
+- **Stories with expiration**: Upload, view, and delete short-lived stories that are cleaned up after 12 hours; in-memory storage tracks viewers and broadcasts totals in real time.
+- **Security-first protections**: IP rate limiting, brute-force tracking, reserved-name enforcement, periodic cleanup of stale tokens/connections, and Firebase logging for major events.
 - **Profile & visibility controls**: Users can update profile pictures, toggle visibility, and the online roster reflects hidden/busy status immediately.
 - **Open-source stack**: TypeScript backend, static `app/` frontend assets, and optional docs in `docs/`.
 
@@ -48,7 +48,7 @@ npm install
 - `GET /signup`: rate-limited generation of a `.key` token with 64 bytes of randomness + 32 bytes of salt.
 - `POST /login`: accepts a 96-byte file upload, hashes it, and ensures the user record exists in Firestore.
 - Socket.IO lifecycle events: `auth`, `stories-updated`, `call-user`, `send-answer`, `relay-message`, `connection-ended`, `update-profile-pic`, `ping`, `disconnect`, etc.
-- Internal cleanup: tokens older than a week are pruned, stories expire after 12 hours, stale connections/timeouts cleaned hourly.
+- Internal cleanup: tokens older than a week are pruned, stories expire after 12 hours, stale connections/timeouts are cleaned periodically.
 
 ## Testing & quality
 - `npm test` currently exits with an error placeholder (no automated tests yet). Add Jest/Mocha suites before relying on this command.
@@ -57,7 +57,7 @@ npm install
 1. Run in a production environment with `NODE_ENV=production` and the Firebase credentials available.
 2. Monitor the Firebase Realtime Database `LOG/...` tree because every event writes there; adjust logging frequency if needed.
 3. Tokens and story data are periodically cleaned via `CLEANUP_INTERVAL` (see `src/socket/events.ts`); adjust those constants for heavier loads.
-4. Ensure HTTPS (or a secure tunnel) in front of the server since it routes real user tokens.
+4. Ensure HTTPS in front of the server since it routes real user tokens.
 
 ## Contributing
 1. Fork the repo, create a feature branch, implement your change, and open a Pull Request.
