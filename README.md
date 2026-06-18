@@ -1,6 +1,6 @@
 # Pitopi
 
-![Status](https://img.shields.io/badge/status-active-brightgreen.svg) ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-339933?logo=node.js) ![License](https://img.shields.io/badge/license-GPLv3-blue.svg) ![Firebase](https://img.shields.io/badge/service-Firebase-orange.svg)
+![Status](https://img.shields.io/badge/status-active-brightgreen.svg) ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-339933?logo=node.js) ![License](https://img.shields.io/badge/license-GPLv3-blue.svg)
 
 Pitopi is a privacy-first Socket.IO chat platform where messages are encrypted before they leave the browser. Users authenticate with a 96-byte key file instead of passwords or personal information, and the server relays encrypted envelopes, logging, and housekeeping data without seeing plaintext chat content.
 
