@@ -1,49 +1,52 @@
 {
-  "name": "pitopi",
-  "version": "1.0.1",
-  "description": "Secure Socket.IO Chat Application with Firebase Authentication",
-  "main": "src/server.ts",
-  "type": "module",
-  "scripts": {
-    "dev": "npx tsx src/server.ts",
-    "build": "tsc && node ./scripts/copy-app.js",
-    "start": "node dist/src/server.js",
-    "watch": "npx ts-node-dev --respawn server.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [
-    "chat",
-    "e2ee",
-    "socket.io",
-    "firebase",
-    "secure-messaging"
-  ],
-  "author": "aardaakpinar",
-  "license": "GPL-3.0-only",
-  "dependencies": {
-    "express": "^5.2.1",
-    "firebase-admin": "^13.8.0",
-    "multer": "^2.1.1",
-    "socket.io": "^4.8.3"
-  },
-  "devDependencies": {
-    "@types/express": "^5.0.6",
-    "@types/multer": "^2.1.0",
-    "@types/node": "^25.9.4",
-    "@types/socket.io": "^3.0.1",
-    "nodemon": "^3.1.11",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/aardaakpinar/pitopi.git"
-  },
-  "bugs": {
-    "url": "https://github.com/aardaakpinar/pitopi/issues"
-  }
+	"name": "pitopi",
+	"version": "1.0.1",
+	"description": "Secure Socket.IO Chat Application with Firebase Authentication",
+	"main": "src/server.ts",
+	"type": "module",
+	"scripts": {
+		"dev": "npx tsx src/server.ts",
+		"build": "tsc && node ./scripts/copy-app.js",
+		"start": "node dist/src/server.js",
+		"watch": "npx ts-node-dev --respawn server.ts",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [
+		"chat",
+		"e2ee",
+		"socket.io",
+		"firebase",
+		"secure-messaging"
+	],
+	"author": "aardaakpinar",
+	"license": "GPL-3.0-only",
+	"dependencies": {
+		"build": "^0.1.4",
+		"express": "^5.2.1",
+		"firebase-admin": "^13.8.0",
+		"multer": "^2.1.1",
+		"npm": "^11.18.0",
+		"run": "^1.5.0",
+		"socket.io": "^4.8.3"
+	},
+	"devDependencies": {
+		"@types/express": "^5.0.6",
+		"@types/multer": "^2.1.0",
+		"@types/node": "^25.9.4",
+		"@types/socket.io": "^3.0.1",
+		"nodemon": "^3.1.11",
+		"ts-node": "^10.9.2",
+		"tsx": "^4.21.0",
+		"typescript": "^5.9.3"
+	},
+	"engines": {
+		"node": "22.x"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/aardaakpinar/pitopi.git"
+	},
+	"bugs": {
+		"url": "https://github.com/aardaakpinar/pitopi/issues"
+	}
 }
