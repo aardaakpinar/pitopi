@@ -1,9 +1,29 @@
 import { Server } from "socket.io";
-import { RESERVED_NAMES, AUTHORIZED_IPS, STALE_CONNECTION_TIMEOUT, STORY_EXPIRY, USER_ID_EXPIRY, CLEANUP_INTERVAL } from "../config/constants.js";
+import {
+  RESERVED_NAMES,
+  AUTHORIZED_IPS,
+  STALE_CONNECTION_TIMEOUT,
+  STORY_EXPIRY,
+  USER_ID_EXPIRY,
+  CLEANUP_INTERVAL,
+} from "../config/constants.js";
 import { dbf } from "../config/firebase.js";
 import { resolveLogContext, logToFirebase } from "../utils/logging.js";
-import { isBanned, getRemainingBanTime, recordFailedAttempt, recordSuccessfulAttempt } from "../auth/bruteForce.js";
-import { getOrCreatePersistentUserId, trackConnection, removeConnection, getConnectedPartner, isUserConnected, getAllActiveStories, broadcastOnlineUsers } from "../utils/helpers.js";
+import {
+  isBanned,
+  getRemainingBanTime,
+  recordFailedAttempt,
+  recordSuccessfulAttempt,
+} from "../auth/bruteForce.js";
+import {
+  getOrCreatePersistentUserId,
+  trackConnection,
+  removeConnection,
+  getConnectedPartner,
+  isUserConnected,
+  getAllActiveStories,
+  broadcastOnlineUsers,
+} from "../utils/helpers.js";
 
 // ==================== DATA STRUCTURES ====================
 export const users = new Map();
@@ -14,7 +34,9 @@ export const activeConnections = new Map();
 // ==================== SOCKET.IO EVENTS ====================
 export function setupSocketEvents(io: Server) {
   io.on("connection", (socket) => {
-    const ip = (socket.handshake.headers["x-forwarded-for"] as string) || socket.handshake.address;
+    const ip =
+      (socket.handshake.headers["x-forwarded-for"] as string) ||
+      socket.handshake.address;
     const userAgent = socket.handshake.headers["user-agent"] || "unknown";
     const acceptLanguage = socket.handshake.headers["accept-language"] || "en";
     const timestamp = new Date().toISOString();
@@ -33,7 +55,8 @@ export function setupSocketEvents(io: Server) {
         return;
       }
 
-      if (isBanned(ip, "auth")) { // Note: This seems duplicated, but keeping as is
+      if (isBanned(ip, "auth")) {
+        // Note: This seems duplicated, but keeping as is
         socket.emit("auth_failed", "Çok fazla istek.");
         socket.disconnect();
         return;
@@ -76,7 +99,9 @@ export function setupSocketEvents(io: Server) {
         if (RESERVED_NAMES.has(username.toLowerCase())) {
           const ipKey = ip.split(",")[0].trim();
           if (!AUTHORIZED_IPS.has(ipKey)) {
-            console.log(`⛔ [${timestamp}] Reserved name attempt: ${username} from ${ipKey}`);
+            console.log(
+              `⛔ [${timestamp}] Reserved name attempt: ${username} from ${ipKey}`,
+            );
             await logToFirebase("AUTH_FAILED", {
               reason: "reserved_name",
               userId,
@@ -90,7 +115,9 @@ export function setupSocketEvents(io: Server) {
           }
         }
 
-        const usernameTaken = Array.from(users.values()).some(u => u.username === username);
+        const usernameTaken = Array.from(users.values()).some(
+          (u) => u.username === username,
+        );
         if (usernameTaken) {
           recordFailedAttempt(ip, "auth");
           console.log(`🚫 [${timestamp}] Username taken: ${username}`);
@@ -107,12 +134,16 @@ export function setupSocketEvents(io: Server) {
         }
 
         const clientPersistentId = userData?.persistentUserId;
-        const persistentUserId = getOrCreatePersistentUserId(username, persistentUsers, clientPersistentId);
+        const persistentUserId = getOrCreatePersistentUserId(
+          username,
+          persistentUsers,
+          clientPersistentId,
+        );
 
         // users map'ine userId'yi de kaydediyoruz — resolveLogContext için
         users.set(socket.id, {
           id: socket.id,
-          userId: uid,              // ← Firebase kalıcı hash
+          userId: uid, // ← Firebase kalıcı hash
           persistentUserId,
           username,
           profilePic: userData?.profilePic || null,
@@ -120,10 +151,12 @@ export function setupSocketEvents(io: Server) {
           hidden: userData?.hidden || false,
           ip,
           userAgent,
-          language: acceptLanguage
+          language: acceptLanguage,
         });
 
-        console.log(`🔐 [${timestamp}] Auth successful: ${username} (${persistentUserId})`);
+        console.log(
+          `🔐 [${timestamp}] Auth successful: ${username} (${persistentUserId})`,
+        );
 
         await logToFirebase("AUTH_OK", {
           ...resolveLogContext(socket.id, users, uid),
@@ -142,11 +175,17 @@ export function setupSocketEvents(io: Server) {
         });
 
         broadcastOnlineUsers(activeConnections, users, io);
-        socket.emit("stories-updated", getAllActiveStories(stories, persistentUsers, users));
-
+        socket.emit(
+          "stories-updated",
+          getAllActiveStories(stories, persistentUsers, users),
+        );
       } catch (err) {
         console.error(`❗ [${timestamp}] Auth error:`, err);
-        socket.emit("auth_failed", "Authentication error: " + (err instanceof Error ? err.message : String(err)));
+        socket.emit(
+          "auth_failed",
+          "Authentication error: " +
+            (err instanceof Error ? err.message : String(err)),
+        );
       }
     });
 
@@ -171,7 +210,10 @@ export function setupSocketEvents(io: Server) {
     socket.on("call-user", ({ targetId, cryptoPublicKey }) => {
       console.log(`📞 [${timestamp}] Call from ${socket.id} to ${targetId}`);
 
-      if (isUserConnected(socket.id, activeConnections) || isUserConnected(targetId, activeConnections)) {
+      if (
+        isUserConnected(socket.id, activeConnections) ||
+        isUserConnected(targetId, activeConnections)
+      ) {
         socket.emit("call-rejected", { reason: "User is busy" });
         console.log(`❌ [${timestamp}] Call rejected: user busy`);
         return;
@@ -187,7 +229,9 @@ export function setupSocketEvents(io: Server) {
     });
 
     socket.on("call-rejected", ({ targetId, reason }) => {
-      console.log(`❌ [${timestamp}] Call rejected from ${socket.id} to ${targetId}: ${reason}`);
+      console.log(
+        `❌ [${timestamp}] Call rejected from ${socket.id} to ${targetId}: ${reason}`,
+      );
 
       const targetUser = users.get(targetId);
       if (targetUser) {
@@ -196,7 +240,9 @@ export function setupSocketEvents(io: Server) {
     });
 
     socket.on("send-answer", ({ targetId, cryptoPublicKey }) => {
-      console.log(`✅ [${timestamp}] Call answered: ${socket.id} -> ${targetId}`);
+      console.log(
+        `✅ [${timestamp}] Call answered: ${socket.id} -> ${targetId}`,
+      );
 
       trackConnection(socket.id, targetId, activeConnections, users, io);
 
@@ -217,13 +263,17 @@ export function setupSocketEvents(io: Server) {
     });
 
     socket.on("connection-ended", ({ targetId }) => {
-      console.log(`🛑 [${timestamp}] Connection ended: ${socket.id} -> ${targetId}`);
+      console.log(
+        `🛑 [${timestamp}] Connection ended: ${socket.id} -> ${targetId}`,
+      );
 
       removeConnection(socket.id, targetId, activeConnections, users, io);
 
       const targetUser = users.get(targetId);
       if (targetUser) {
-        io.to(targetUser.socketId).emit("chat-disconnected", { from: socket.id });
+        io.to(targetUser.socketId).emit("chat-disconnected", {
+          from: socket.id,
+        });
       }
     });
 
@@ -249,7 +299,7 @@ export function setupSocketEvents(io: Server) {
         createdAt: Date.now(),
         userId: socket.id,
         persistentUserId: user.persistentUserId,
-        viewers: new Set<string>()
+        viewers: new Set<string>(),
       };
 
       if (!stories.has(user.persistentUserId)) {
@@ -266,7 +316,10 @@ export function setupSocketEvents(io: Server) {
         persistentUsers.set(user.persistentUserId, persistentData);
       }
 
-      io.emit("stories-updated", getAllActiveStories(stories, persistentUsers, users));
+      io.emit(
+        "stories-updated",
+        getAllActiveStories(stories, persistentUsers, users),
+      );
     });
 
     socket.on("story-viewed", async ({ storyId, persistentUserId }) => {
@@ -284,8 +337,8 @@ export function setupSocketEvents(io: Server) {
       console.log(`👁️ [${timestamp}] Story ${storyId} viewed by ${uid}`);
       await logToFirebase("STORY_VIEWED", {
         storyId,
-        persistentUserId,           // hikaye sahibi
-        viewer: resolveLogContext(socket.id, users, uid),  // kim izledi
+        persistentUserId, // hikaye sahibi
+        viewer: resolveLogContext(socket.id, users, uid), // kim izledi
       });
     });
 
@@ -300,12 +353,17 @@ export function setupSocketEvents(io: Server) {
 
       if (updatedStories.length !== userStories.length) {
         stories.set(user.persistentUserId, updatedStories);
-        console.log(`🗑️ [${timestamp}] Story ${storyId} deleted by ${user.username}`);
+        console.log(
+          `🗑️ [${timestamp}] Story ${storyId} deleted by ${user.username}`,
+        );
         await logToFirebase("STORY_DELETED", {
           storyId,
           ...resolveLogContext(socket.id, users, uid),
         });
-        io.emit("stories-updated", getAllActiveStories(stories, persistentUsers, users));
+        io.emit(
+          "stories-updated",
+          getAllActiveStories(stories, persistentUsers, users),
+        );
       }
     });
 
@@ -316,7 +374,9 @@ export function setupSocketEvents(io: Server) {
       const user = users.get(socket.id);
       if (!user) return;
 
-      console.log(`🖼️ [${timestamp}] Profile picture updated by ${user.username}`);
+      console.log(
+        `🖼️ [${timestamp}] Profile picture updated by ${user.username}`,
+      );
 
       try {
         await dbf.collection("users").doc(uid).update({
@@ -347,7 +407,10 @@ export function setupSocketEvents(io: Server) {
         persistentUsers.set(user.persistentUserId, persistentData);
       }
 
-      const connectedPartner = getConnectedPartner(socket.id, activeConnections);
+      const connectedPartner = getConnectedPartner(
+        socket.id,
+        activeConnections,
+      );
 
       // resolveLogContext'i silmeden önce çağır
       const logCtx = resolveLogContext(socket.id, users, uid);
@@ -356,15 +419,26 @@ export function setupSocketEvents(io: Server) {
       console.log(`❌ [${timestamp}] Disconnected: ${socket.id}`);
 
       if (connectedPartner) {
-        removeConnection(socket.id, connectedPartner, activeConnections, users, io);
+        removeConnection(
+          socket.id,
+          connectedPartner,
+          activeConnections,
+          users,
+          io,
+        );
         io.to(connectedPartner).emit("chat-disconnected", { from: socket.id });
-        console.log(`ℹ️ [${timestamp}] Notified partner ${connectedPartner} about disconnect`);
+        console.log(
+          `ℹ️ [${timestamp}] Notified partner ${connectedPartner} about disconnect`,
+        );
       }
 
       io.emit("user-disconnected", socket.id);
       await logToFirebase("DISCONNECT", logCtx);
       broadcastOnlineUsers(activeConnections, users, io);
-      io.emit("stories-updated", getAllActiveStories(stories, persistentUsers, users));
+      io.emit(
+        "stories-updated",
+        getAllActiveStories(stories, persistentUsers, users),
+      );
     });
   });
 }
@@ -375,7 +449,9 @@ export function setupCleanup(io: Server) {
     const now = Date.now();
 
     for (const [persistentUserId, userStories] of stories.entries()) {
-      const activeStories = userStories.filter((story: any) => now - story.createdAt < STORY_EXPIRY);
+      const activeStories = userStories.filter(
+        (story: any) => now - story.createdAt < STORY_EXPIRY,
+      );
       if (activeStories.length === 0) {
         stories.delete(persistentUserId);
       } else {
@@ -393,18 +469,26 @@ export function setupCleanup(io: Server) {
     for (const [connectionId, connection] of activeConnections.entries()) {
       if (now - (connection as any).timestamp > STALE_CONNECTION_TIMEOUT) {
         activeConnections.delete(connectionId);
-        console.log(`[${new Date().toISOString()}] Stale connection cleaned up: ${connectionId}`);
+        console.log(
+          `[${new Date().toISOString()}] Stale connection cleaned up: ${connectionId}`,
+        );
       }
     }
 
     try {
       const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
-      const tokensSnap = await dbf.collection("tokens").where("createdAt", "<", oneWeekAgo).get();
-      tokensSnap.forEach(doc => doc.ref.delete());
+      const tokensSnap = await dbf
+        .collection("tokens")
+        .where("createdAt", "<", oneWeekAgo)
+        .get();
+      tokensSnap.forEach((doc) => doc.ref.delete());
     } catch (err) {
       console.error("Error cleaning old tokens:", err);
     }
 
-    io.emit("stories-updated", getAllActiveStories(stories, persistentUsers, users));
+    io.emit(
+      "stories-updated",
+      getAllActiveStories(stories, persistentUsers, users),
+    );
   }, CLEANUP_INTERVAL);
 }

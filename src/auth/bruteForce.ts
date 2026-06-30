@@ -1,9 +1,20 @@
-import { BRUTE_FORCE_CONFIG, RATE_LIMIT_CONFIG, SUSPICIOUS_THRESHOLD, CLEANUP_INTERVAL } from "../config/constants.js";
+import {
+  BRUTE_FORCE_CONFIG,
+  RATE_LIMIT_CONFIG,
+  SUSPICIOUS_THRESHOLD,
+  CLEANUP_INTERVAL,
+} from "../config/constants.js";
 import { logToFirebase } from "../utils/logging.js";
 
 // ==================== BRUTE FORCE PROTECTION ====================
-export const bruteForceMap = new Map<string, { attempts: number; firstAttempt: number; bannedUntil?: number }>();
-export const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
+export const bruteForceMap = new Map<
+  string,
+  { attempts: number; firstAttempt: number; bannedUntil?: number }
+>();
+export const rateLimitMap = new Map<
+  string,
+  { count: number; windowStart: number }
+>();
 
 export function getBruteForceKey(ip: string, type: string): string {
   return `${ip}:${type}`;
@@ -58,7 +69,9 @@ export function recordFailedAttempt(ip: string, type: string): void {
 
   if (record.attempts >= BRUTE_FORCE_CONFIG.maxAttempts) {
     record.bannedUntil = now + BRUTE_FORCE_CONFIG.banDurationMs;
-    console.warn(`🚫 Brute force ban: ${ip} (${type}) — ${BRUTE_FORCE_CONFIG.banDurationMs / 60000} dakika`);
+    console.warn(
+      `🚫 Brute force ban: ${ip} (${type}) — ${BRUTE_FORCE_CONFIG.banDurationMs / 60000} dakika`,
+    );
     logToFirebase("BRUTE_FORCE_BAN", { ip, type, attempts: record.attempts });
   }
 
@@ -74,7 +87,11 @@ function checkSuspiciousActivity(ip: string, type: string): void {
   const key = getBruteForceKey(ip, type);
   const record = bruteForceMap.get(key);
   if (record && record.attempts >= SUSPICIOUS_THRESHOLD) {
-    logToFirebase("SUSPICIOUS_ACTIVITY", { ip, type, attempts: record.attempts });
+    logToFirebase("SUSPICIOUS_ACTIVITY", {
+      ip,
+      type,
+      attempts: record.attempts,
+    });
   }
 }
 

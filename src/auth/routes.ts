@@ -2,19 +2,34 @@ import express from "express";
 import multer from "multer";
 import crypto from "crypto";
 import { dbf } from "../config/firebase.js";
-import { isRateLimited, isBanned, getRemainingBanTime, recordFailedAttempt, recordSuccessfulAttempt } from "./bruteForce.js";
+import {
+  isRateLimited,
+  isBanned,
+  getRemainingBanTime,
+  recordFailedAttempt,
+  recordSuccessfulAttempt,
+} from "./bruteForce.js";
 import { logToFirebase } from "../utils/logging.js";
 
 // ==================== AUTHENTICATION SYSTEM ====================
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200 } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 200 },
+});
 
 // Signup - Generate .key token
 export function setupAuthRoutes(app: express.Application) {
   app.get("/signup", async (req, res) => {
-    const clientIp = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "unknown";
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "unknown";
 
     if (isRateLimited(clientIp)) {
-      await logToFirebase("RATE_LIMITED", { ip: clientIp, endpoint: "/signup" });
+      await logToFirebase("RATE_LIMITED", {
+        ip: clientIp,
+        endpoint: "/signup",
+      });
       return res.status(429).json({ error: "Çok fazla istek." });
     }
 
@@ -28,7 +43,10 @@ export function setupAuthRoutes(app: express.Application) {
       .digest("hex");
 
     try {
-      await dbf.collection("tokens").doc(hash).create({ createdAt: Date.now() });
+      await dbf
+        .collection("tokens")
+        .doc(hash)
+        .create({ createdAt: Date.now() });
     } catch (err: any) {
       if (err.code === 6) {
         console.warn("⚠️ Token hash collision, regenerating...");
@@ -41,22 +59,33 @@ export function setupAuthRoutes(app: express.Application) {
     console.log("The buffer size sent:", buffer.length);
 
     res.setHeader("Content-Type", "application/octet-stream");
-    res.setHeader("Content-Disposition", `attachment; filename="${Date.now()}.key"`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${Date.now()}.key"`,
+    );
     res.send(buffer);
   });
 
   // Login - Verify .key token and authenticate
   app.post("/login", upload.single("file"), async (req, res) => {
-    const clientIp = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "unknown";
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "unknown";
 
     if (isBanned(clientIp, "login")) {
       const remaining = getRemainingBanTime(clientIp, "login");
-      return res.status(429).json({ success: false, error: `${remaining} dakika sonra tekrar dene.` });
+      return res.status(429).json({
+        success: false,
+        error: `${remaining} dakika sonra tekrar dene.`,
+      });
     }
 
     if (isRateLimited(clientIp)) {
       await logToFirebase("RATE_LIMITED", { ip: clientIp, endpoint: "/login" });
-      return res.status(429).json({ success: false, error: "Çok fazla istek." });
+      return res
+        .status(429)
+        .json({ success: false, error: "Çok fazla istek." });
     }
 
     // Tam 96 byte değilse reddet — içeriği hiç okuma
@@ -111,11 +140,20 @@ export function setupAuthRoutes(app: express.Application) {
     });
   });
 
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (err.code === "LIMIT_FILE_SIZE") {
-      return res.status(400).json({ success: false, error: "Dosya çok büyük." });
-    }
-    console.error("Unhandled error:", err);
-    res.status(500).json({ success: false, error: "Sunucu hatası." });
-  });
+  app.use(
+    (
+      err: any,
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction,
+    ) => {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        return res
+          .status(400)
+          .json({ success: false, error: "Dosya çok büyük." });
+      }
+      console.error("Unhandled error:", err);
+      res.status(500).json({ success: false, error: "Sunucu hatası." });
+    },
+  );
 }

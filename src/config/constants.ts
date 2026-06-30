@@ -4,11 +4,26 @@ export const CLEANUP_INTERVAL = 60 * 60 * 1000; // 1 hour
 export const STALE_CONNECTION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
 export const TURKISH_MONTHS = [
-  "OCAK","SUBAT","MART","NISAN","MAYIS","HAZIRAN","TEMMUZ","AGUSTOS","EYLUL","EKIM","KASIM","ARALIK"
+  "OCAK",
+  "SUBAT",
+  "MART",
+  "NISAN",
+  "MAYIS",
+  "HAZIRAN",
+  "TEMMUZ",
+  "AGUSTOS",
+  "EYLUL",
+  "EKIM",
+  "KASIM",
+  "ARALIK",
 ];
 
 export const RESERVED_NAMES = new Set([
-  "nar", "admin", "root", "system", "moderator"
+  "nar",
+  "admin",
+  "root",
+  "system",
+  "moderator",
 ]);
 
 export const AUTHORIZED_IPS = new Set(["localhost"]);

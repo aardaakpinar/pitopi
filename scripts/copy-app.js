@@ -1,11 +1,11 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const rootDir = path.join(__dirname, '..');
-const srcDir = path.join(rootDir, 'app');
-const destDir = path.join(rootDir, 'dist', 'app');
+const rootDir = path.join(__dirname, "..");
+const srcDir = path.join(rootDir, "app");
+const destDir = path.join(rootDir, "dist", "app");
 
 function copyDir(src, dest) {
   if (!fs.existsSync(dest)) {
@@ -13,7 +13,7 @@ function copyDir(src, dest) {
   }
 
   const files = fs.readdirSync(src);
-  files.forEach(file => {
+  files.forEach((file) => {
     const srcPath = path.join(src, file);
     const destPath = path.join(dest, file);
     const stat = fs.statSync(srcPath);

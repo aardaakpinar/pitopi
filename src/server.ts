@@ -2,7 +2,7 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import path from "path";
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,14 +18,16 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" },
-  maxHttpBufferSize: 20e6
+  maxHttpBufferSize: 20e6,
 });
 
 // ==================== STATIC FILES ====================
 app.use(express.static(path.join(__dirname, "..", "app")));
 
 // ==================== ROUTES ====================
-app.get("/", (_, res) => res.sendFile(path.join(__dirname, "..", "app", "index.html")));
+app.get("/", (_, res) =>
+  res.sendFile(path.join(__dirname, "..", "app", "index.html")),
+);
 
 // Setup authentication routes
 setupAuthRoutes(app);
@@ -39,7 +41,9 @@ setupCleanup(io);
 // ==================== START SERVER ====================
 server.on("error", (error: NodeJS.ErrnoException) => {
   if (error.code === "EADDRINUSE") {
-    console.error(`Port ${PORT} is already in use. Stop the existing server or run with PORT=3001.`);
+    console.error(
+      `Port ${PORT} is already in use. Stop the existing server or run with PORT=3001.`,
+    );
     process.exit(1);
   }
 
