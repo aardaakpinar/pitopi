@@ -18,7 +18,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" },
-  maxHttpBufferSize: 20e6,
+  maxHttpBufferSize: 100e6,
 });
 
 // ==================== STATIC FILES ====================
