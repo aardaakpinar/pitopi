@@ -17,17 +17,15 @@ import { setupSocketEvents, setupCleanup } from "./socket/events.js";
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "*" },
-  maxHttpBufferSize: 100e6,
+	cors: { origin: "*" },
+	maxHttpBufferSize: 50e6,
 });
 
 // ==================== STATIC FILES ====================
 app.use(express.static(path.join(__dirname, "..", "app")));
 
 // ==================== ROUTES ====================
-app.get("/", (_, res) =>
-  res.sendFile(path.join(__dirname, "..", "app", "index.html")),
-);
+app.get("/", (_, res) => res.sendFile(path.join(__dirname, "..", "app", "index.html")));
 
 // Setup authentication routes
 setupAuthRoutes(app);
@@ -40,16 +38,14 @@ setupCleanup(io);
 
 // ==================== START SERVER ====================
 server.on("error", (error: NodeJS.ErrnoException) => {
-  if (error.code === "EADDRINUSE") {
-    console.error(
-      `Port ${PORT} is already in use. Stop the existing server or run with PORT=3001.`,
-    );
-    process.exit(1);
-  }
+	if (error.code === "EADDRINUSE") {
+		console.error(`Port ${PORT} is already in use. Stop the existing server or run with PORT=3001.`);
+		process.exit(1);
+	}
 
-  throw error;
+	throw error;
 });
 
 server.listen(PORT, () => {
-  console.log(`✨ Pitopi server running at http://localhost:${PORT}`);
+	console.log(`✨ Pitopi server running at http://localhost:${PORT}`);
 });

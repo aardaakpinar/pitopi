@@ -159,7 +159,7 @@ function initFileUpload() {
     const file = fileInput.files[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > 50 * 1024 * 1024) {
       showToast(t("file_limit"));
       return;
     }
@@ -549,7 +549,7 @@ function handleStoryUpload() {
     showToast(t("image_file_valid"));
     return;
   }
-  if (file.size > 10 * 1024 * 1024) {
+  if (file.size > 50 * 1024 * 1024) {
     showToast(t("file_limit"));
     return;
   }
