@@ -2,32 +2,31 @@
  * 1. Configuration Constants
  */
 const STORAGE_KEYS = {
-  USER_ID: "pitopi_user_id",
-  PROFILE_PIC: "p2p_pp_base64",
-  HIDDEN: "p2p_hidden",
-  REMOTE_ID: "p2p_remote_id",
-  CONNECTION_STATUS: "p2p_connection_status",
-  LANG: "p2p_current_lang",
+	USER_ID: "pitopi_user_id",
+	PROFILE_PIC: "p2p_pp_base64",
+	HIDDEN: "p2p_hidden",
+	REMOTE_ID: "p2p_remote_id",
+	CONNECTION_STATUS: "p2p_connection_status",
+	LANG: "p2p_current_lang",
 };
 
 const CONNECTION_STATES = {
-  CONNECTED: "Connection established",
-  CONNECTING: "Connecting...",
-  DISCONNECTED: "Connection lost",
-  FALLBACK: "Encrypted socket active",
+	CONNECTED: "Connection established",
+	CONNECTING: "Connecting...",
+	DISCONNECTED: "Connection lost",
+	FALLBACK: "Encrypted socket active",
 };
 
 const SOCKET_SERVER = (() => {
-  const hostname = window.location.hostname;
-  const protocol = window.location.protocol;
-  if (hostname === "pitopi.onrender.com") return "https://pitopi.onrender.com/";
-  if (hostname === "localhost" || hostname === "127.0.0.1")
-    return `${window.location.origin}/`;
-  return `${protocol}//${hostname}${window.location.port ? `:${window.location.port}` : ""}/`;
+	const hostname = window.location.hostname;
+	const protocol = window.location.protocol;
+	if (hostname === "pitopi.onrender.com") return "https://pitopi.onrender.com/";
+	if (hostname === "localhost" || hostname === "127.0.0.1") return `${window.location.origin}/`;
+	return `${protocol}//${hostname}${window.location.port ? `:${window.location.port}` : ""}/`;
 })();
 const DEFAULT_PROFILE_PIC = "assets/img/boringavatar.svg";
 const STORY_DURATION = {
-  IMAGE: 4000,
+	IMAGE: 4000,
 };
 
 /*
@@ -37,104 +36,104 @@ const savedUserId = localStorage.getItem(STORAGE_KEYS.USER_ID);
 if (!savedUserId) window.location.href = "login.html";
 
 const socket = io(SOCKET_SERVER, {
-  transports: ["websocket"],
+	transports: ["websocket"],
 });
 
 /*
  * 3. Global State
  */
 const state = {
-  isDisconnecting: false,
-  receivedBuffers: [],
-  incomingFileInfo: null,
-  connectionStatus: false,
-  remoteId: sessionStorage.getItem(STORAGE_KEYS.REMOTE_ID) || null,
-  myId: null,
-  myPersistentId: null,
-  myUsername: null,
-  myProfilePic: null,
-  allUsers: [],
-  hiddenFromSearch: localStorage.getItem(STORAGE_KEYS.HIDDEN) === "true",
-  currentStories: {},
-  currentStoryIndex: 0,
-  currentUserStories: [],
-  storyTimer: null,
-  currentView: "home",
-  selectedUser: null,
-  activeChat: null,
-  activeFilter: "all",
-  chats: [],
-  messages: {},
-  isConnected: null,
-  socketChatTimer: null,
-  crypto: {
-    localKeyPair: null,
-    localPublicKey: null,
-    remotePublicKey: null,
-    sharedKey: null,
-  },
+	isDisconnecting: false,
+	receivedBuffers: [],
+	incomingFileInfo: null,
+	connectionStatus: false,
+	remoteId: sessionStorage.getItem(STORAGE_KEYS.REMOTE_ID) || null,
+	myId: null,
+	myPersistentId: null,
+	myUsername: null,
+	myProfilePic: null,
+	allUsers: [],
+	hiddenFromSearch: localStorage.getItem(STORAGE_KEYS.HIDDEN) === "true",
+	currentStories: {},
+	currentStoryIndex: 0,
+	currentUserStories: [],
+	storyTimer: null,
+	currentView: "home",
+	selectedUser: null,
+	activeChat: null,
+	activeFilter: "all",
+	chats: [],
+	messages: {},
+	isConnected: null,
+	socketChatTimer: null,
+	crypto: {
+		localKeyPair: null,
+		localPublicKey: null,
+		remotePublicKey: null,
+		sharedKey: null,
+	},
 };
 
 const receivingFile = {
-  meta: null,
-  chunks: [],
+	meta: null,
+	chunks: [],
 };
 
 /*
  * 4. DOM Elements
  */
 const elements = {
-  get TabChat() {
-    return document.getElementById("TabChat");
-  },
-  get TabStory() {
-    return document.getElementById("TabStory");
-  },
-  get TabSetting() {
-    return document.getElementById("TabSetting");
-  },
-  get chatsList() {
-    return document.getElementById("chats-list");
-  },
-  get chatPanel() {
-    return document.getElementById("chat-panel");
-  },
-  get noChatPlaceholder() {
-    return document.getElementById("no-chat-placeholder");
-  },
-  get chatContent() {
-    return document.getElementById("chat-content");
-  },
-  get chatName() {
-    return document.getElementById("chat-name");
-  },
-  get chatAvatar() {
-    return document.getElementById("chat-avatar");
-  },
-  get chatStatus() {
-    return document.getElementById("chat-status");
-  },
-  get messagesContainer() {
-    return document.getElementById("messages-container");
-  },
-  get messageInput() {
-    return document.getElementById("message-input");
-  },
-  get sendMessageBtn() {
-    return document.getElementById("send-message");
-  },
-  get backToChatBtn() {
-    return document.getElementById("back-to-chats");
-  },
-  get searchInput() {
-    return document.getElementById("searchId");
-  },
-  get storyInput() {
-    return document.getElementById("storyInput");
-  },
-  get uploadAvatarInput() {
-    return document.getElementById("uploadAvatarInput");
-  },
+	get TabChat() {
+		return document.getElementById("TabChat");
+	},
+	get TabStory() {
+		return document.getElementById("TabStory");
+	},
+	get TabSetting() {
+		return document.getElementById("TabSetting");
+	},
+	get chatsList() {
+		return document.getElementById("chats-list");
+	},
+	get chatPanel() {
+		return document.getElementById("chat-panel");
+	},
+	get noChatPlaceholder() {
+		return document.getElementById("no-chat-placeholder");
+	},
+	get chatContent() {
+		return document.getElementById("chat-content");
+	},
+	get chatName() {
+		return document.getElementById("chat-name");
+	},
+	get chatAvatar() {
+		return document.getElementById("chat-avatar");
+	},
+	get chatStatus() {
+		return document.getElementById("chat-status");
+	},
+	get messagesContainer() {
+		return document.getElementById("messages-container");
+	},
+	get messageInput() {
+		return document.getElementById("message-input");
+	},
+	get sendMessageBtn() {
+		return document.getElementById("send-message");
+	},
+	get backToChatBtn() {
+		return document.getElementById("back-to-chats");
+	},
+	get searchInput() {
+		return document.getElementById("searchId");
+	},
+	get storyInput() {
+		return document.getElementById("storyInput");
+	},
+	get uploadAvatarInput() {
+		return document.getElementById("uploadAvatarInput");
+	},
 };
 
 let currentLang = localStorage.getItem(STORAGE_KEYS.LANG) || "en";
@@ -146,169 +145,215 @@ const textDecoder = new TextDecoder();
  * 5. Initialization
  */
 function initApp() {
-  setupEventListeners();
-  initUIEventListeners();
-  initFileUpload();
+	setupEventListeners();
+	initUIEventListeners();
+	initFileUpload();
 }
 
 function initFileUpload() {
-  const fileInput = document.getElementById("fileInput");
-  if (!fileInput) return;
+	const fileInput = document.getElementById("fileInput");
+	if (!fileInput) return;
 
-  fileInput.addEventListener("change", () => {
-    const file = fileInput.files[0];
-    if (!file) return;
+	fileInput.addEventListener("change", async () => {
+		let file = fileInput.files[0];
+		if (!file) return;
 
-    if (file.size > 50 * 1024 * 1024) {
-      showToast(t("file_limit"));
-      return;
-    }
+		if (file.size > 50 * 1024 * 1024) {
+			showToast(t("file_limit"));
+			return;
+		}
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64Data = reader.result;
-      const fileMeta = {
-        type: "file",
-        name: file.name,
-        size: file.size,
-        mimeType: file.type,
-        data: base64Data,
-      };
-      try {
-        await sendFileInChunks(fileMeta);
-        renderFilePreview(fileMeta, "me");
-        fileInput.value = "";
-      } catch (error) {
-        console.error("File send error:", error);
-        showSystemMessage("File send failed: " + error.message);
-      }
-    };
-    reader.readAsDataURL(file);
-  });
+		// Resim ise metadata temizle
+		if (file.type.startsWith("image/")) {
+			try {
+				file = await removeImageMetadata(file);
+			} catch (err) {
+				console.error("Metadata temizlenemedi:", err);
+			}
+		}
+
+		const reader = new FileReader();
+
+		reader.onload = async () => {
+			const base64Data = reader.result;
+
+			const fileMeta = {
+				type: "file",
+				name: file.name,
+				size: file.size,
+				mimeType: file.type,
+				data: base64Data,
+			};
+
+			try {
+				await sendFileInChunks(fileMeta);
+				renderFilePreview(fileMeta, "me");
+				fileInput.value = "";
+			} catch (error) {
+				console.error("File send error:", error);
+				showSystemMessage("File send failed: " + error.message);
+			}
+		};
+
+		reader.readAsDataURL(file);
+	});
+}
+
+async function removeImageMetadata(file) {
+	return new Promise((resolve, reject) => {
+		const img = new Image();
+		const url = URL.createObjectURL(file);
+
+		img.onload = () => {
+			URL.revokeObjectURL(url);
+
+			const canvas = document.createElement("canvas");
+			canvas.width = img.width;
+			canvas.height = img.height;
+
+			const ctx = canvas.getContext("2d");
+			ctx.drawImage(img, 0, 0);
+
+			canvas.toBlob(
+				(blob) => {
+					if (!blob) {
+						reject(new Error("Canvas oluşturulamadı."));
+						return;
+					}
+
+					resolve(
+						new File([blob], file.name, {
+							type: file.type,
+							lastModified: Date.now(),
+						}),
+					);
+				},
+				file.type,
+				0.95,
+			);
+		};
+
+		img.onerror = (err) => {
+			URL.revokeObjectURL(url);
+			reject(err);
+		};
+
+		img.src = url;
+	});
 }
 
 async function sendFileInChunks(fileMeta) {
-  const chunkSize = 16000;
-  const { name, mimeType, data } = fileMeta;
-  const totalChunks = Math.ceil(data.length / chunkSize);
+	const chunkSize = 16000;
+	const { name, mimeType, data } = fileMeta;
+	const totalChunks = Math.ceil(data.length / chunkSize);
 
-  await sendSecurePayload({ type: "file-meta", name, mimeType, totalChunks });
+	await sendSecurePayload({ type: "file-meta", name, mimeType, totalChunks });
 
-  for (let i = 0; i < totalChunks; i++) {
-    const chunk = data.slice(i * chunkSize, (i + 1) * chunkSize);
-    await sendSecurePayload({ type: "file-chunk", index: i, chunk });
-  }
+	for (let i = 0; i < totalChunks; i++) {
+		const chunk = data.slice(i * chunkSize, (i + 1) * chunkSize);
+		await sendSecurePayload({ type: "file-chunk", index: i, chunk });
+	}
 }
 
 function setupEventListeners() {
-  if (elements.sendMessageBtn) {
-    elements.sendMessageBtn.addEventListener("click", sendMessage);
-  }
+	if (elements.sendMessageBtn) {
+		elements.sendMessageBtn.addEventListener("click", sendMessage);
+	}
 
-  if (elements.messageInput) {
-    elements.messageInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-  }
+	if (elements.messageInput) {
+		elements.messageInput.addEventListener("keydown", (e) => {
+			if (e.key === "Enter" && !e.shiftKey) {
+				e.preventDefault();
+				sendMessage();
+			}
+		});
+	}
 
-  if (elements.backToChatBtn) {
-    elements.backToChatBtn.addEventListener("click", () => {
-      elements.chatPanel.classList.remove("mobile-chat-open");
-      elements.chatPanel.classList.add("mobile-chat-closed");
-    });
-  }
+	if (elements.backToChatBtn) {
+		elements.backToChatBtn.addEventListener("click", () => {
+			elements.chatPanel.classList.remove("mobile-chat-open");
+			elements.chatPanel.classList.add("mobile-chat-closed");
+		});
+	}
 
-  if (elements.searchInput) {
-    elements.searchInput.addEventListener("input", (e) => {
-      searchInCurrentTab(e.target.value.trim().toLowerCase());
-    });
-  }
+	if (elements.searchInput) {
+		elements.searchInput.addEventListener("input", (e) => {
+			searchInCurrentTab(e.target.value.trim().toLowerCase());
+		});
+	}
 }
 
 function initUIEventListeners() {
-  let typingTimeout;
-  if (elements.messageInput) {
-    elements.messageInput.addEventListener("input", () => {
-      if (state.connectionStatus) {
-        sendSecurePayload({ type: "typing" }).catch(() => {});
-      }
-      clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(() => {
-        if (state.connectionStatus) {
-          sendSecurePayload({ type: "stop-typing" }).catch(() => {});
-        }
-      }, 2000);
-    });
-  }
+	let typingTimeout;
+	if (elements.messageInput) {
+		elements.messageInput.addEventListener("input", () => {
+			if (state.connectionStatus) {
+				sendSecurePayload({ type: "typing" }).catch(() => {});
+			}
+			clearTimeout(typingTimeout);
+			typingTimeout = setTimeout(() => {
+				if (state.connectionStatus) {
+					sendSecurePayload({ type: "stop-typing" }).catch(() => {});
+				}
+			}, 2000);
+		});
+	}
 }
 
 function initStoryFunctionality() {
-  if (elements.storyInput)
-    elements.storyInput.addEventListener("change", handleStoryUpload);
+	if (elements.storyInput) elements.storyInput.addEventListener("change", handleStoryUpload);
 }
 
 function initProfilePictureUpload() {
-  if (elements.uploadAvatarInput)
-    elements.uploadAvatarInput.addEventListener(
-      "change",
-      handleProfilePictureUpload,
-    );
+	if (elements.uploadAvatarInput) elements.uploadAvatarInput.addEventListener("change", handleProfilePictureUpload);
 }
 
 /*
  * 6. UI Render Functions
  */
 function getRandomMessage(key) {
-  const arr = translations[currentLang]?.[key];
-  if (Array.isArray(arr)) return arr[Math.floor(Math.random() * arr.length)];
-  return key;
+	const arr = translations[currentLang]?.[key];
+	if (Array.isArray(arr)) return arr[Math.floor(Math.random() * arr.length)];
+	return key;
 }
 
 function getFileIconClass(fileName = "", mimeType = "") {
-  const ext = fileName.split(".").pop().toLowerCase();
-  const map = {
-    pdf: "fa-file-pdf",
-    doc: "fa-file-word",
-    docx: "fa-file-word",
-    xls: "fa-file-excel",
-    xlsx: "fa-file-excel",
-    csv: "fa-file-csv",
-    ppt: "fa-file-powerpoint",
-    pptx: "fa-file-powerpoint",
-    zip: "fa-file-zipper",
-    rar: "fa-file-zipper",
-    txt: "fa-file-lines",
-    js: "fa-file-code",
-    html: "fa-file-code",
-    css: "fa-file-code",
-    json: "fa-file-code",
-  };
-  return map[ext] || "fa-file";
+	const ext = fileName.split(".").pop().toLowerCase();
+	const map = {
+		pdf: "fa-file-pdf",
+		doc: "fa-file-word",
+		docx: "fa-file-word",
+		xls: "fa-file-excel",
+		xlsx: "fa-file-excel",
+		csv: "fa-file-csv",
+		ppt: "fa-file-powerpoint",
+		pptx: "fa-file-powerpoint",
+		zip: "fa-file-zipper",
+		rar: "fa-file-zipper",
+		txt: "fa-file-lines",
+		js: "fa-file-code",
+		html: "fa-file-code",
+		css: "fa-file-code",
+		json: "fa-file-code",
+	};
+	return map[ext] || "fa-file";
 }
 
 function escapeHtml(unsafe) {
-  return String(unsafe)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+	return String(unsafe).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
 function renderFilePreview(fileMeta, from) {
-  const { name, mimeType, data } = fileMeta;
-  let content = "";
+	const { name, mimeType, data } = fileMeta;
+	let content = "";
 
-  if (mimeType.startsWith("image/")) {
-    content = `<img src="${data}" alt="${escapeHtml(name)}" class="max-w-[200px] rounded-lg" />`;
-  } else if (mimeType.startsWith("audio/")) {
-    content = `<audio controls src="${data}" class="mt-2"></audio>`;
-  } else {
-    const iconClass = getFileIconClass(name, mimeType);
-    content = `
+	if (mimeType.startsWith("image/")) {
+		content = `<img src="${data}" alt="${escapeHtml(name)}" class="max-w-[200px] rounded-lg" />`;
+	} else if (mimeType.startsWith("audio/")) {
+		content = `<audio controls src="${data}" class="mt-2"></audio>`;
+	} else {
+		const iconClass = getFileIconClass(name, mimeType);
+		content = `
       <div class="flex items-center space-x-4 bg-gray-100 dark:bg-gray-800 p-3 rounded shadow-md max-w-md">
         <div class="flex-shrink-0">
           <i class="fas ${iconClass} text-3xl text-gray-600 dark:text-gray-300"></i>
@@ -318,142 +363,116 @@ function renderFilePreview(fileMeta, from) {
           <a href="${data}" download="${name}" class="text-sm text-blue-600 hover:underline">Download File</a>
         </div>
       </div>`;
-  }
-  logMessage(content, from);
+	}
+	logMessage(content, from);
 }
 
 function sendSafe(channel, data) {
-  try {
-    if (channel?.readyState === "open") {
-      channel.send(data);
-    } else {
-      console.warn("Channel not open, cannot send message");
-    }
-  } catch (err) {
-    console.error("Error sending message:", err);
-  }
+	try {
+		if (channel?.readyState === "open") {
+			channel.send(data);
+		} else {
+			console.warn("Channel not open, cannot send message");
+		}
+	} catch (err) {
+		console.error("Error sending message:", err);
+	}
 }
 
 function bytesToBase64(bytes) {
-  let binary = "";
-  const chunkSize = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-  }
-  return btoa(binary);
+	let binary = "";
+	const chunkSize = 0x8000;
+	for (let i = 0; i < bytes.length; i += chunkSize) {
+		binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+	}
+	return btoa(binary);
 }
 
 function base64ToBytes(base64) {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
+	const binary = atob(base64);
+	const bytes = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+	return bytes;
 }
 
 function resetSessionCrypto() {
-  state.crypto.localKeyPair = null;
-  state.crypto.localPublicKey = null;
-  state.crypto.remotePublicKey = null;
-  state.crypto.sharedKey = null;
+	state.crypto.localKeyPair = null;
+	state.crypto.localPublicKey = null;
+	state.crypto.remotePublicKey = null;
+	state.crypto.sharedKey = null;
 }
 
 function getWebCrypto() {
-  const webCrypto = globalThis.crypto;
-  if (!webCrypto?.subtle) {
-    throw new Error(
-      "E2E encryption requires HTTPS or localhost. Open Pitopi over HTTPS, or use http://localhost during development.",
-    );
-  }
-  return webCrypto;
+	const webCrypto = globalThis.crypto;
+	if (!webCrypto?.subtle) {
+		throw new Error("E2E encryption requires HTTPS or localhost. Open Pitopi over HTTPS, or use http://localhost during development.");
+	}
+	return webCrypto;
 }
 
 async function prepareLocalCrypto() {
-  const webCrypto = getWebCrypto();
-  state.crypto.localKeyPair = await webCrypto.subtle.generateKey(
-    { name: "ECDH", namedCurve: "P-256" },
-    true,
-    ["deriveKey"],
-  );
-  const publicKey = await webCrypto.subtle.exportKey(
-    "raw",
-    state.crypto.localKeyPair.publicKey,
-  );
-  state.crypto.localPublicKey = bytesToBase64(new Uint8Array(publicKey));
-  return state.crypto.localPublicKey;
+	const webCrypto = getWebCrypto();
+	state.crypto.localKeyPair = await webCrypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveKey"]);
+	const publicKey = await webCrypto.subtle.exportKey("raw", state.crypto.localKeyPair.publicKey);
+	state.crypto.localPublicKey = bytesToBase64(new Uint8Array(publicKey));
+	return state.crypto.localPublicKey;
 }
 
 async function deriveSharedKey(remotePublicKey) {
-  const webCrypto = getWebCrypto();
-  if (!state.crypto.localKeyPair) await prepareLocalCrypto();
-  state.crypto.remotePublicKey = remotePublicKey;
-  const importedRemoteKey = await webCrypto.subtle.importKey(
-    "raw",
-    base64ToBytes(remotePublicKey),
-    { name: "ECDH", namedCurve: "P-256" },
-    false,
-    [],
-  );
-  state.crypto.sharedKey = await webCrypto.subtle.deriveKey(
-    { name: "ECDH", public: importedRemoteKey },
-    state.crypto.localKeyPair.privateKey,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt", "decrypt"],
-  );
-  if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false;
+	const webCrypto = getWebCrypto();
+	if (!state.crypto.localKeyPair) await prepareLocalCrypto();
+	state.crypto.remotePublicKey = remotePublicKey;
+	const importedRemoteKey = await webCrypto.subtle.importKey("raw", base64ToBytes(remotePublicKey), { name: "ECDH", namedCurve: "P-256" }, false, []);
+	state.crypto.sharedKey = await webCrypto.subtle.deriveKey({ name: "ECDH", public: importedRemoteKey }, state.crypto.localKeyPair.privateKey, { name: "AES-GCM", length: 256 }, false, [
+		"encrypt",
+		"decrypt",
+	]);
+	if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false;
 }
 
 async function encryptPayload(payload) {
-  const webCrypto = getWebCrypto();
-  if (!state.crypto.sharedKey) throw new Error("Encryption key is not ready");
-  const iv = webCrypto.getRandomValues(new Uint8Array(12));
-  const ciphertext = await webCrypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
-    state.crypto.sharedKey,
-    textEncoder.encode(JSON.stringify(payload)),
-  );
-  return {
-    type: "encrypted",
-    version: 1,
-    iv: bytesToBase64(iv),
-    ciphertext: bytesToBase64(new Uint8Array(ciphertext)),
-  };
+	const webCrypto = getWebCrypto();
+	if (!state.crypto.sharedKey) throw new Error("Encryption key is not ready");
+	const iv = webCrypto.getRandomValues(new Uint8Array(12));
+	const ciphertext = await webCrypto.subtle.encrypt({ name: "AES-GCM", iv }, state.crypto.sharedKey, textEncoder.encode(JSON.stringify(payload)));
+	return {
+		type: "encrypted",
+		version: 1,
+		iv: bytesToBase64(iv),
+		ciphertext: bytesToBase64(new Uint8Array(ciphertext)),
+	};
 }
 
 async function decryptEnvelope(envelope) {
-  const webCrypto = getWebCrypto();
-  if (!state.crypto.sharedKey) throw new Error("Encryption key is not ready");
-  const plaintext = await webCrypto.subtle.decrypt(
-    { name: "AES-GCM", iv: base64ToBytes(envelope.iv) },
-    state.crypto.sharedKey,
-    base64ToBytes(envelope.ciphertext),
-  );
-  return JSON.parse(textDecoder.decode(plaintext));
+	const webCrypto = getWebCrypto();
+	if (!state.crypto.sharedKey) throw new Error("Encryption key is not ready");
+	const plaintext = await webCrypto.subtle.decrypt({ name: "AES-GCM", iv: base64ToBytes(envelope.iv) }, state.crypto.sharedKey, base64ToBytes(envelope.ciphertext));
+	return JSON.parse(textDecoder.decode(plaintext));
 }
 
 async function sendSecurePayload(payload) {
-  const envelope = await encryptPayload(payload);
+	const envelope = await encryptPayload(payload);
 
-  if (state.remoteId && socket.connected) {
-    socket.emit("relay-message", { targetId: state.remoteId, envelope });
-    return;
-  }
+	if (state.remoteId && socket.connected) {
+		socket.emit("relay-message", { targetId: state.remoteId, envelope });
+		return;
+	}
 
-  throw new Error("No active message channel");
+	throw new Error("No active message channel");
 }
 
 function clearSocketChatTimer() {
-  if (!state.socketChatTimer) return;
-  clearTimeout(state.socketChatTimer);
-  state.socketChatTimer = null;
+	if (!state.socketChatTimer) return;
+	clearTimeout(state.socketChatTimer);
+	state.socketChatTimer = null;
 }
 
 function activateEncryptedRelay() {
-  clearSocketChatTimer();
-  updateStatus(CONNECTION_STATES.FALLBACK);
-  state.connectionStatus = true;
-  if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false;
-  if (elements.chatStatus) elements.chatStatus.textContent = "Encrypted socket";
+	clearSocketChatTimer();
+	updateStatus(CONNECTION_STATES.FALLBACK);
+	state.connectionStatus = true;
+	if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false;
+	if (elements.chatStatus) elements.chatStatus.textContent = "Encrypted socket";
 }
 
 /*
@@ -462,418 +481,396 @@ function activateEncryptedRelay() {
 let activeTabId = "btnChats";
 
 const sidebarButtons = [
-  { id: "btnChats", action: renderChats },
-  { id: "btnStorys", action: renderStorys },
-  { id: "btnSettings", action: renderSettings },
+	{ id: "btnChats", action: renderChats },
+	{ id: "btnStorys", action: renderStorys },
+	{ id: "btnSettings", action: renderSettings },
 ];
 
 function activateButton(buttonList, activeId) {
-  buttonList.forEach(({ id }) => {
-    const btn = document.getElementById(id);
-    if (id === activeId) {
-      btn.classList.add("text-accent");
-      btn.classList.remove("text-gray-500");
-    } else {
-      btn.classList.remove("text-accent");
-      btn.classList.add("text-gray-500");
-    }
-  });
+	buttonList.forEach(({ id }) => {
+		const btn = document.getElementById(id);
+		if (id === activeId) {
+			btn.classList.add("text-accent");
+			btn.classList.remove("text-gray-500");
+		} else {
+			btn.classList.remove("text-accent");
+			btn.classList.add("text-gray-500");
+		}
+	});
 }
 
 sidebarButtons.forEach(({ id, action }) => {
-  document.getElementById(id)?.addEventListener("click", () => {
-    activeTabId = id;
-    activateButton(sidebarButtons, id);
-    action();
-  });
+	document.getElementById(id)?.addEventListener("click", () => {
+		activeTabId = id;
+		activateButton(sidebarButtons, id);
+		action();
+	});
 });
 
 const mobileButtons = [
-  { id: "mobBtnChats", action: renderChats },
-  { id: "mobBtnStorys", action: renderStorys },
-  { id: "mobBtnSettings", action: renderSettings },
+	{ id: "mobBtnChats", action: renderChats },
+	{ id: "mobBtnStorys", action: renderStorys },
+	{ id: "mobBtnSettings", action: renderSettings },
 ];
 
 mobileButtons.forEach(({ id, action }) => {
-  document.getElementById(id)?.addEventListener("click", () => {
-    activeTabId = id;
-    activateButton(mobileButtons, id);
-    action();
-  });
+	document.getElementById(id)?.addEventListener("click", () => {
+		activeTabId = id;
+		activateButton(mobileButtons, id);
+		action();
+	});
 });
 
 /*
  * 8. Media Upload Handlers
  */
 function handleProfilePictureUpload() {
-  const file = elements.uploadAvatarInput.files[0];
-  if (!file?.type.startsWith("image/")) {
-    showToast(t("image_file_valid"));
-    return;
-  }
+	const file = elements.uploadAvatarInput.files[0];
+	if (!file?.type.startsWith("image/")) {
+		showToast(t("image_file_valid"));
+		return;
+	}
 
-  const img = new Image();
-  const objectUrl = URL.createObjectURL(file);
-  img.onload = () => {
-    const MAX = 256;
-    let { width, height } = img;
-    if (width > height) {
-      height = Math.round((height * MAX) / width);
-      width = MAX;
-    } else {
-      width = Math.round((width * MAX) / height);
-      height = MAX;
-    }
+	const img = new Image();
+	const objectUrl = URL.createObjectURL(file);
+	img.onload = () => {
+		const MAX = 256;
+		let { width, height } = img;
+		if (width > height) {
+			height = Math.round((height * MAX) / width);
+			width = MAX;
+		} else {
+			width = Math.round((width * MAX) / height);
+			height = MAX;
+		}
 
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+		const canvas = document.createElement("canvas");
+		canvas.width = width;
+		canvas.height = height;
+		canvas.getContext("2d").drawImage(img, 0, 0, width, height);
 
-    const base64Image = canvas.toDataURL("image/jpeg", 0.7);
-    URL.revokeObjectURL(objectUrl);
+		const base64Image = canvas.toDataURL("image/jpeg", 0.7);
+		URL.revokeObjectURL(objectUrl);
 
-    localStorage.setItem(STORAGE_KEYS.PROFILE_PIC, base64Image);
-    document.querySelector("#btnSettings img").src = base64Image;
-    document.querySelector("#mobBtnSettings img").src = base64Image;
-    showToast(t("pp_update"));
-    socket.emit("update-profile-pic", base64Image);
-  };
-  img.src = objectUrl;
+		localStorage.setItem(STORAGE_KEYS.PROFILE_PIC, base64Image);
+		document.querySelector("#btnSettings img").src = base64Image;
+		document.querySelector("#mobBtnSettings img").src = base64Image;
+		showToast(t("pp_update"));
+		socket.emit("update-profile-pic", base64Image);
+	};
+	img.src = objectUrl;
 }
 
 function handleStoryUpload() {
-  const file = elements.storyInput.files[0];
-  if (!file) return;
-  if (!file.type.startsWith("image/")) {
-    showToast(t("image_file_valid"));
-    return;
-  }
-  if (file.size > 50 * 1024 * 1024) {
-    showToast(t("file_limit"));
-    return;
-  }
+	const file = elements.storyInput.files[0];
+	if (!file) return;
+	if (!file.type.startsWith("image/")) {
+		showToast(t("image_file_valid"));
+		return;
+	}
+	if (file.size > 50 * 1024 * 1024) {
+		showToast(t("file_limit"));
+		return;
+	}
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    socket.emit("upload-story", {
-      data: reader.result,
-      type: "image",
-      caption: "",
-    });
-    showToast(t("story_upload"));
-  };
-  reader.readAsDataURL(file);
+	const reader = new FileReader();
+	reader.onload = () => {
+		socket.emit("upload-story", {
+			data: reader.result,
+			type: "image",
+			caption: "",
+		});
+		showToast(t("story_upload"));
+	};
+	reader.readAsDataURL(file);
 }
 
 /*
  * 9. View Logic
  */
 function renderChats() {
-  renderChatsList();
-  showOnlyTab(TabChat);
+	renderChatsList();
+	showOnlyTab(TabChat);
 }
 function renderStorys() {
-  renderStoriesList();
-  showOnlyTab(TabStory);
+	renderStoriesList();
+	showOnlyTab(TabStory);
 }
 function renderSettings() {
-  renderSettingsList();
-  showOnlyTab(TabSetting);
+	renderSettingsList();
+	showOnlyTab(TabSetting);
 }
 
 function showOnlyTab(tab) {
-  TabChat.classList.add("hidden");
-  TabStory.classList.add("hidden");
-  TabSetting.classList.add("hidden");
-  tab.classList.remove("hidden");
+	TabChat.classList.add("hidden");
+	TabStory.classList.add("hidden");
+	TabSetting.classList.add("hidden");
+	tab.classList.remove("hidden");
 }
 
 /*
  * 10. Messaging
  */
 async function sendMessage() {
-  const text = elements.messageInput?.value.trim();
-  if (!text) return;
+	const text = elements.messageInput?.value.trim();
+	if (!text) return;
 
-  if (!state.remoteId || !state.crypto.sharedKey) {
-    showSystemMessage("Mesaj gönderilemedi. Bağlantı kapalı.");
-    return;
-  }
+	if (!state.remoteId || !state.crypto.sharedKey) {
+		showSystemMessage("Mesaj gönderilemedi. Bağlantı kapalı.");
+		return;
+	}
 
-  try {
-    await sendSecurePayload({ type: "text", message: text });
-    logMessage(text, "me");
-    elements.messageInput.value = "";
-  } catch (error) {
-    console.error("Error sending message:", error);
-    showSystemMessage("Mesaj gönderilemedi: " + error.message);
-  }
+	try {
+		await sendSecurePayload({ type: "text", message: text });
+		logMessage(text, "me");
+		elements.messageInput.value = "";
+	} catch (error) {
+		console.error("Error sending message:", error);
+		showSystemMessage("Mesaj gönderilemedi: " + error.message);
+	}
 }
 
 async function handleData(data) {
-  if (typeof data !== "string") return;
+	if (typeof data !== "string") return;
 
-  try {
-    let msg = JSON.parse(data);
-    if (msg.type === "encrypted") {
-      msg = await decryptEnvelope(msg);
-    }
+	try {
+		let msg = JSON.parse(data);
+		if (msg.type === "encrypted") {
+			msg = await decryptEnvelope(msg);
+		}
 
-    if (msg.type === "file-meta") {
-      receivingFile.meta = msg;
-      receivingFile.chunks = [];
-    } else if (msg.type === "file-chunk") {
-      receivingFile.chunks[msg.index] = msg.chunk;
-      const allReceived =
-        receivingFile.chunks.length === receivingFile.meta.totalChunks &&
-        receivingFile.chunks.every(Boolean);
+		if (msg.type === "file-meta") {
+			receivingFile.meta = msg;
+			receivingFile.chunks = [];
+		} else if (msg.type === "file-chunk") {
+			receivingFile.chunks[msg.index] = msg.chunk;
+			const allReceived = receivingFile.chunks.length === receivingFile.meta.totalChunks && receivingFile.chunks.every(Boolean);
 
-      if (allReceived) {
-        renderFilePreview(
-          {
-            type: "file",
-            name: receivingFile.meta.name,
-            mimeType: receivingFile.meta.mimeType,
-            data: receivingFile.chunks.join(""),
-          },
-          "them",
-        );
-        playNotificationSound();
-        receivingFile.meta = null;
-        receivingFile.chunks = [];
-      }
-      return;
-    }
+			if (allReceived) {
+				renderFilePreview(
+					{
+						type: "file",
+						name: receivingFile.meta.name,
+						mimeType: receivingFile.meta.mimeType,
+						data: receivingFile.chunks.join(""),
+					},
+					"them",
+				);
+				playNotificationSound();
+				receivingFile.meta = null;
+				receivingFile.chunks = [];
+			}
+			return;
+		}
 
-    if (msg.type === "file") {
-      renderFilePreview(msg, "them");
-      playNotificationSound();
-      return;
-    }
-    if (msg.type === "text") {
-      logMessage(msg.message, "them");
-      playNotificationSound();
-    } else if (msg.type === "typing") {
-      if (elements.chatStatus) {
-        elements.chatStatus.textContent = "Yazıyor...";
-        elements.chatStatus.style.color = "orange";
-      }
-    } else if (msg.type === "stop-typing") {
-      if (elements.chatStatus) {
-        elements.chatStatus.textContent = t("text-available");
-        elements.chatStatus.style.color = "";
-      }
-    }
-  } catch (e) {
-    console.error("Error parsing message:", e);
-  }
+		if (msg.type === "file") {
+			renderFilePreview(msg, "them");
+			playNotificationSound();
+			return;
+		}
+		if (msg.type === "text") {
+			logMessage(msg.message, "them");
+			playNotificationSound();
+		} else if (msg.type === "typing") {
+			if (elements.chatStatus) {
+				elements.chatStatus.textContent = "Yazıyor...";
+				elements.chatStatus.style.color = "orange";
+			}
+		} else if (msg.type === "stop-typing") {
+			if (elements.chatStatus) {
+				elements.chatStatus.textContent = t("text-available");
+				elements.chatStatus.style.color = "";
+			}
+		}
+	} catch (e) {
+		console.error("Error parsing message:", e);
+	}
 }
 
 function handlePlainMessage(msg) {
-  if (msg.type === "file-meta") {
-    receivingFile.meta = msg;
-    receivingFile.chunks = [];
-  } else if (msg.type === "file-chunk") {
-    receivingFile.chunks[msg.index] = msg.chunk;
-    const allReceived =
-      receivingFile.chunks.length === receivingFile.meta.totalChunks &&
-      receivingFile.chunks.every(Boolean);
+	if (msg.type === "file-meta") {
+		receivingFile.meta = msg;
+		receivingFile.chunks = [];
+	} else if (msg.type === "file-chunk") {
+		receivingFile.chunks[msg.index] = msg.chunk;
+		const allReceived = receivingFile.chunks.length === receivingFile.meta.totalChunks && receivingFile.chunks.every(Boolean);
 
-    if (allReceived) {
-      renderFilePreview(
-        {
-          type: "file",
-          name: receivingFile.meta.name,
-          mimeType: receivingFile.meta.mimeType,
-          data: receivingFile.chunks.join(""),
-        },
-        "them",
-      );
-      playNotificationSound();
-      receivingFile.meta = null;
-      receivingFile.chunks = [];
-    }
-    return;
-  }
+		if (allReceived) {
+			renderFilePreview(
+				{
+					type: "file",
+					name: receivingFile.meta.name,
+					mimeType: receivingFile.meta.mimeType,
+					data: receivingFile.chunks.join(""),
+				},
+				"them",
+			);
+			playNotificationSound();
+			receivingFile.meta = null;
+			receivingFile.chunks = [];
+		}
+		return;
+	}
 
-  if (msg.type === "file") {
-    renderFilePreview(msg, "them");
-    playNotificationSound();
-    return;
-  }
-  if (msg.type === "text") {
-    logMessage(msg.message, "them");
-    playNotificationSound();
-  } else if (msg.type === "typing") {
-    if (elements.chatStatus) {
-      elements.chatStatus.textContent = "Yaziyor...";
-      elements.chatStatus.style.color = "orange";
-    }
-  } else if (msg.type === "stop-typing") {
-    if (elements.chatStatus) {
-      elements.chatStatus.textContent = t("text-available");
-      elements.chatStatus.style.color = "";
-    }
-  }
+	if (msg.type === "file") {
+		renderFilePreview(msg, "them");
+		playNotificationSound();
+		return;
+	}
+	if (msg.type === "text") {
+		logMessage(msg.message, "them");
+		playNotificationSound();
+	} else if (msg.type === "typing") {
+		if (elements.chatStatus) {
+			elements.chatStatus.textContent = "Yaziyor...";
+			elements.chatStatus.style.color = "orange";
+		}
+	} else if (msg.type === "stop-typing") {
+		if (elements.chatStatus) {
+			elements.chatStatus.textContent = t("text-available");
+			elements.chatStatus.style.color = "";
+		}
+	}
 }
 
 function formatTime(date) {
-  return date.toLocaleString("en-US", {
-    hour: "numeric",
-    minute: "numeric",
-    hour12: false,
-  });
+	return date.toLocaleString("en-US", {
+		hour: "numeric",
+		minute: "numeric",
+		hour12: false,
+	});
 }
 
 function logMessage(text, from) {
-  if (!elements.messagesContainer) return;
+	if (!elements.messagesContainer) return;
 
-  const wrapper = document.createElement("div");
-  wrapper.className = "mb-4";
+	const wrapper = document.createElement("div");
+	wrapper.className = "mb-4";
 
-  const row = document.createElement("div");
-  row.className = `flex ${from === "me" ? "justify-end" : "justify-start"}`;
+	const row = document.createElement("div");
+	row.className = `flex ${from === "me" ? "justify-end" : "justify-start"}`;
 
-  const msgDiv = document.createElement("div");
-  msgDiv.className = `max-w-[80%] px-3 py-2 rounded-lg ${
-    from === "me"
-      ? "bg-messageBg-light dark:bg-messageBg-dark rounded-br-none"
-      : "bg-messageBg-light dark:bg-messageBg-dark rounded-bl-none"
-  }`;
+	const msgDiv = document.createElement("div");
+	msgDiv.className = `max-w-[80%] px-3 py-2 rounded-lg ${from === "me" ? "bg-messageBg-light dark:bg-messageBg-dark rounded-br-none" : "bg-messageBg-light dark:bg-messageBg-dark rounded-bl-none"}`;
 
-  const isHtml =
-    text.includes("<img") ||
-    text.includes("<audio") ||
-    text.includes("<video") ||
-    text.includes("<div");
+	const isHtml = text.includes("<img") || text.includes("<audio") || text.includes("<video") || text.includes("<div");
 
-  if (isHtml) {
-    msgDiv.innerHTML = text;
-  } else {
-    const parts = text.split(/(https?:\/\/[^\s]+)/g);
-    parts.forEach((part) => {
-      if (part.match(/https?:\/\/[^\s]+/)) {
-        try {
-          const url = new URL(part);
-          const a = document.createElement("a");
-          a.href = url.href;
-          a.target = "_blank";
-          a.rel = "noopener noreferrer";
-          a.style.textDecoration = "underline";
-          a.textContent = part;
-          msgDiv.appendChild(a);
-        } catch {
-          msgDiv.appendChild(document.createTextNode(part));
-        }
-      } else {
-        msgDiv.appendChild(document.createTextNode(part));
-      }
-    });
-  }
+	if (isHtml) {
+		msgDiv.innerHTML = text;
+	} else {
+		const parts = text.split(/(https?:\/\/[^\s]+)/g);
+		parts.forEach((part) => {
+			if (part.match(/https?:\/\/[^\s]+/)) {
+				try {
+					const url = new URL(part);
+					const a = document.createElement("a");
+					a.href = url.href;
+					a.target = "_blank";
+					a.rel = "noopener noreferrer";
+					a.style.textDecoration = "underline";
+					a.textContent = part;
+					msgDiv.appendChild(a);
+				} catch {
+					msgDiv.appendChild(document.createTextNode(part));
+				}
+			} else {
+				msgDiv.appendChild(document.createTextNode(part));
+			}
+		});
+	}
 
-  row.appendChild(msgDiv);
+	row.appendChild(msgDiv);
 
-  const timeDiv = document.createElement("div");
-  timeDiv.className = `text-xs text-gray-500 dark:text-gray-400 ${from === "me" ? "text-right" : "text-left"} mt-1`;
-  timeDiv.textContent = formatTime(new Date());
+	const timeDiv = document.createElement("div");
+	timeDiv.className = `text-xs text-gray-500 dark:text-gray-400 ${from === "me" ? "text-right" : "text-left"} mt-1`;
+	timeDiv.textContent = formatTime(new Date());
 
-  wrapper.appendChild(row);
-  wrapper.appendChild(timeDiv);
-  elements.messagesContainer.appendChild(wrapper);
-  elements.messagesContainer.scrollTop =
-    elements.messagesContainer.scrollHeight;
+	wrapper.appendChild(row);
+	wrapper.appendChild(timeDiv);
+	elements.messagesContainer.appendChild(wrapper);
+	elements.messagesContainer.scrollTop = elements.messagesContainer.scrollHeight;
 }
 
 function showSystemMessage(message) {
-  if (!elements.messagesContainer) return;
-  const wrapper = document.createElement("div");
-  wrapper.className = "flex justify-center mb-4";
-  const msgDiv = document.createElement("div");
-  msgDiv.className =
-    "bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full text-sm text-gray-600 dark:text-gray-300";
-  msgDiv.textContent = message;
-  wrapper.appendChild(msgDiv);
-  elements.messagesContainer.appendChild(wrapper);
-  elements.messagesContainer.scrollTop =
-    elements.messagesContainer.scrollHeight;
+	if (!elements.messagesContainer) return;
+	const wrapper = document.createElement("div");
+	wrapper.className = "flex justify-center mb-4";
+	const msgDiv = document.createElement("div");
+	msgDiv.className = "bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full text-sm text-gray-600 dark:text-gray-300";
+	msgDiv.textContent = message;
+	wrapper.appendChild(msgDiv);
+	elements.messagesContainer.appendChild(wrapper);
+	elements.messagesContainer.scrollTop = elements.messagesContainer.scrollHeight;
 }
 
 async function startCall(id) {
-  if (!id) {
-    showToast(t("select_chat_title"));
-    return;
-  }
+	if (!id) {
+		showToast(t("select_chat_title"));
+		return;
+	}
 
-  if (state.connectionStatus) {
-    const confirmReconnect = confirm("Zaten bir sohbete bağlısınız...");
-    if (!confirmReconnect) return;
-    handleChatDisconnect(false);
-  }
+	if (state.connectionStatus) {
+		const confirmReconnect = confirm("Zaten bir sohbete bağlısınız...");
+		if (!confirmReconnect) return;
+		handleChatDisconnect(false);
+	}
 
-  resetSessionCrypto();
+	resetSessionCrypto();
 
-  try {
-    state.remoteId = id;
-    sessionStorage.setItem(STORAGE_KEYS.REMOTE_ID, id);
+	try {
+		state.remoteId = id;
+		sessionStorage.setItem(STORAGE_KEYS.REMOTE_ID, id);
 
-    const cryptoPublicKey = await prepareLocalCrypto();
-    updateStatus(CONNECTION_STATES.CONNECTING);
+		const cryptoPublicKey = await prepareLocalCrypto();
+		updateStatus(CONNECTION_STATES.CONNECTING);
 
-    socket.emit("call-user", { targetId: state.remoteId, cryptoPublicKey });
-  } catch (error) {
-    console.error("Socket chat request error:", error);
-    handleChatDisconnect(false);
-  }
+		socket.emit("call-user", { targetId: state.remoteId, cryptoPublicKey });
+	} catch (error) {
+		console.error("Socket chat request error:", error);
+		handleChatDisconnect(false);
+	}
 }
 
 function handleChatDisconnect(useRelayFallback = true) {
-  if (state.isDisconnecting) return;
-  state.isDisconnecting = true;
+	if (state.isDisconnecting) return;
+	state.isDisconnecting = true;
 
-  console.log("Socket chat disconnected, cleaning up...");
-  const canUseEncryptedRelay = Boolean(
-    useRelayFallback &&
-    state.remoteId &&
-    state.crypto.sharedKey &&
-    socket.connected,
-  );
-  if (canUseEncryptedRelay) {
-    activateEncryptedRelay();
-    state.isDisconnecting = false;
-    return;
-  }
+	console.log("Socket chat disconnected, cleaning up...");
+	const canUseEncryptedRelay = Boolean(useRelayFallback && state.remoteId && state.crypto.sharedKey && socket.connected);
+	if (canUseEncryptedRelay) {
+		activateEncryptedRelay();
+		state.isDisconnecting = false;
+		return;
+	}
 
-  updateStatus(CONNECTION_STATES.DISCONNECTED);
+	updateStatus(CONNECTION_STATES.DISCONNECTED);
 
-  if (state.connectionStatus) {
-    showSystemMessage(
-      "Karşı taraf bağlantıyı kapattı veya bağlantı kaybedildi.",
-    );
-  }
+	if (state.connectionStatus) {
+		showSystemMessage("Karşı taraf bağlantıyı kapattı veya bağlantı kaybedildi.");
+	}
 
-  if (state.remoteId) {
-    socket.emit("connection-ended", { targetId: state.remoteId });
-  }
+	if (state.remoteId) {
+		socket.emit("connection-ended", { targetId: state.remoteId });
+	}
 
-  closeChat();
+	closeChat();
 
-  state.connectionStatus = false;
-  state.remoteId = null;
-  state.receivedBuffers = [];
-  state.incomingFileInfo = null;
-  state.activeChat = null;
-  state.selectedUser = null;
-  resetSessionCrypto();
+	state.connectionStatus = false;
+	state.remoteId = null;
+	state.receivedBuffers = [];
+	state.incomingFileInfo = null;
+	state.activeChat = null;
+	state.selectedUser = null;
+	resetSessionCrypto();
 
-  sessionStorage.removeItem(STORAGE_KEYS.REMOTE_ID);
-  localStorage.removeItem(STORAGE_KEYS.CONNECTION_STATUS);
-  clearSocketChatTimer();
+	sessionStorage.removeItem(STORAGE_KEYS.REMOTE_ID);
+	localStorage.removeItem(STORAGE_KEYS.CONNECTION_STATUS);
+	clearSocketChatTimer();
 
-  if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
-  renderChatsList();
+	if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
+	renderChatsList();
 
-  state.isDisconnecting = false;
+	state.isDisconnecting = false;
 }
 
 /*
@@ -883,518 +880,480 @@ let isStoryPlaying = false;
 let storyTimeout = null;
 
 function openStory(user) {
-  if (isStoryPlaying) return;
-  if (!user?.persistentUserId) return;
+	if (isStoryPlaying) return;
+	if (!user?.persistentUserId) return;
 
-  closeChat();
+	closeChat();
 
-  const storyData = state.currentStories[user.persistentUserId];
-  const stories = storyData?.stories?.filter((s) => s.type === "image") || [];
-  if (!stories.length) return;
+	const storyData = state.currentStories[user.persistentUserId];
+	const stories = storyData?.stories?.filter((s) => s.type === "image") || [];
+	if (!stories.length) return;
 
-  isStoryPlaying = true;
+	isStoryPlaying = true;
 
-  const panel = document.getElementById("story-panel");
-  const img = document.getElementById("story-image");
-  const progressContainer = document.getElementById("story-progress-container");
-  const usernameLabel = document.getElementById("story-username");
-  const avatar = document.getElementById("story-avatar");
-  const viewersCountDiv = document.getElementById("story-viewersCount");
+	const panel = document.getElementById("story-panel");
+	const img = document.getElementById("story-image");
+	const progressContainer = document.getElementById("story-progress-container");
+	const usernameLabel = document.getElementById("story-username");
+	const avatar = document.getElementById("story-avatar");
+	const viewersCountDiv = document.getElementById("story-viewersCount");
 
-  elements.noChatPlaceholder?.classList.add("hidden");
-  panel.classList.remove("hidden");
-  document.getElementById("chat-panel")?.classList.remove("hidden");
-  document.getElementById("chat-panel")?.classList.remove("mobile-chat-closed");
-  document.getElementById("chat-panel")?.classList.add("mobile-chat-open");
+	elements.noChatPlaceholder?.classList.add("hidden");
+	panel.classList.remove("hidden");
+	document.getElementById("chat-panel")?.classList.remove("hidden");
+	document.getElementById("chat-panel")?.classList.remove("mobile-chat-closed");
+	document.getElementById("chat-panel")?.classList.add("mobile-chat-open");
 
-  usernameLabel.textContent = user.username;
-  avatar.src = user.profilePic || DEFAULT_PROFILE_PIC;
+	usernameLabel.textContent = user.username;
+	avatar.src = user.profilePic || DEFAULT_PROFILE_PIC;
 
-  progressContainer.innerHTML = "";
-  stories.forEach((_, i) => {
-    const bar = document.createElement("div");
-    bar.className =
-      "h-full bg-gray-700 relative flex-1 mx-0.5 overflow-hidden rounded";
-    bar.innerHTML = `<div id="progress-fill-${i}" class="absolute top-0 left-0 h-full bg-accent w-0 transition-all"></div>`;
-    progressContainer.appendChild(bar);
-  });
+	progressContainer.innerHTML = "";
+	stories.forEach((_, i) => {
+		const bar = document.createElement("div");
+		bar.className = "h-full bg-gray-700 relative flex-1 mx-0.5 overflow-hidden rounded";
+		bar.innerHTML = `<div id="progress-fill-${i}" class="absolute top-0 left-0 h-full bg-accent w-0 transition-all"></div>`;
+		progressContainer.appendChild(bar);
+	});
 
-  let index = 0;
+	let index = 0;
 
-  function showNextStory() {
-    if (!isStoryPlaying) return;
-    if (index >= stories.length) {
-      closeStory();
-      return;
-    }
+	function showNextStory() {
+		if (!isStoryPlaying) return;
+		if (index >= stories.length) {
+			closeStory();
+			return;
+		}
 
-    const story = stories[index];
-    img.src = story.data;
+		const story = stories[index];
+		img.src = story.data;
 
-    socket.emit("story-viewed", {
-      persistentUserId: user.persistentUserId,
-      storyId: story.id,
-    });
-    viewersCountDiv.innerHTML = `<i class="fas fa-eye"></i>  ${story.viewersCount || 0}`;
+		socket.emit("story-viewed", {
+			persistentUserId: user.persistentUserId,
+			storyId: story.id,
+		});
+		viewersCountDiv.innerHTML = `<i class="fas fa-eye"></i>  ${story.viewersCount || 0}`;
 
-    if (user.persistentUserId === state.myPersistentId) {
-      const deleteBtn = document.getElementById("delete-story-btn");
-      if (deleteBtn) {
-        deleteBtn.classList.remove("hidden");
-        deleteBtn.onclick = () => {
-          if (confirm("Bu hikayeyi silmek istediğine emin misin?")) {
-            socket.emit("delete-story", { storyId: story.id });
-            closeStory();
-          }
-        };
-      }
-    }
+		if (user.persistentUserId === state.myPersistentId) {
+			const deleteBtn = document.getElementById("delete-story-btn");
+			if (deleteBtn) {
+				deleteBtn.classList.remove("hidden");
+				deleteBtn.onclick = () => {
+					if (confirm("Bu hikayeyi silmek istediğine emin misin?")) {
+						socket.emit("delete-story", { storyId: story.id });
+						closeStory();
+					}
+				};
+			}
+		}
 
-    img.draggable = false;
-    img.ontouchstart = (e) => e.preventDefault();
-    img.onmousedown = (e) => e.preventDefault();
-    img.classList.remove("hidden");
+		img.draggable = false;
+		img.ontouchstart = (e) => e.preventDefault();
+		img.onmousedown = (e) => e.preventDefault();
+		img.classList.remove("hidden");
 
-    const fill = document.getElementById(`progress-fill-${index}`);
-    fill.style.width = "0%";
-    fill.style.transition = "none";
-    requestAnimationFrame(() => {
-      fill.style.transition = `width ${STORY_DURATION.IMAGE}ms linear`;
-      fill.style.width = "100%";
-    });
+		const fill = document.getElementById(`progress-fill-${index}`);
+		fill.style.width = "0%";
+		fill.style.transition = "none";
+		requestAnimationFrame(() => {
+			fill.style.transition = `width ${STORY_DURATION.IMAGE}ms linear`;
+			fill.style.width = "100%";
+		});
 
-    storyTimeout = setTimeout(() => {
-      index++;
-      showNextStory();
-    }, STORY_DURATION.IMAGE);
-  }
+		storyTimeout = setTimeout(() => {
+			index++;
+			showNextStory();
+		}, STORY_DURATION.IMAGE);
+	}
 
-  showNextStory();
+	showNextStory();
 }
 
 function closeStory() {
-  if (storyTimeout) {
-    clearTimeout(storyTimeout);
-    storyTimeout = null;
-  }
-  isStoryPlaying = false;
+	if (storyTimeout) {
+		clearTimeout(storyTimeout);
+		storyTimeout = null;
+	}
+	isStoryPlaying = false;
 
-  const deleteBtn = document.getElementById("delete-story-btn");
-  if (deleteBtn) deleteBtn.classList.add("hidden");
+	const deleteBtn = document.getElementById("delete-story-btn");
+	if (deleteBtn) deleteBtn.classList.add("hidden");
 
-  const img = document.getElementById("story-image");
-  if (img) img.src = "";
+	const img = document.getElementById("story-image");
+	if (img) img.src = "";
 
-  document.getElementById("story-panel")?.classList.add("hidden");
-  document.getElementById("story-progress-container").innerHTML = "";
+	document.getElementById("story-panel")?.classList.add("hidden");
+	document.getElementById("story-progress-container").innerHTML = "";
 
-  const chatPanel = document.getElementById("chat-panel");
-  chatPanel?.classList.add("hidden");
-  chatPanel?.classList.add("mobile-chat-closed");
-  chatPanel?.classList.remove("mobile-chat-open");
+	const chatPanel = document.getElementById("chat-panel");
+	chatPanel?.classList.add("hidden");
+	chatPanel?.classList.add("mobile-chat-closed");
+	chatPanel?.classList.remove("mobile-chat-open");
 
-  elements.noChatPlaceholder?.classList.remove("hidden");
+	elements.noChatPlaceholder?.classList.remove("hidden");
 }
 
 /*
  * 14. User Chat Screen
  */
 function prepareChatUI() {
-  if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
-  elements.noChatPlaceholder?.classList.add("hidden");
+	if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
+	elements.noChatPlaceholder?.classList.add("hidden");
 
-  if (elements.chatContent) {
-    elements.chatContent.classList.remove("hidden");
-    elements.chatContent.classList.add("flex");
-  }
+	if (elements.chatContent) {
+		elements.chatContent.classList.remove("hidden");
+		elements.chatContent.classList.add("flex");
+	}
 
-  if (elements.chatPanel) {
-    elements.chatPanel.classList.remove("hidden");
-    elements.chatPanel.classList.add("mobile-chat-open");
-    elements.chatPanel.classList.remove("mobile-chat-closed");
-  }
+	if (elements.chatPanel) {
+		elements.chatPanel.classList.remove("hidden");
+		elements.chatPanel.classList.add("mobile-chat-open");
+		elements.chatPanel.classList.remove("mobile-chat-closed");
+	}
 
-  if (elements.messagesContainer) elements.messagesContainer.innerHTML = "";
-  setTimeout(() => elements.messageInput?.focus(), 0);
+	if (elements.messagesContainer) elements.messagesContainer.innerHTML = "";
+	setTimeout(() => elements.messageInput?.focus(), 0);
 }
 
 function openChat(user) {
-  closeStory();
-  state.activeChat = user;
-  state.selectedUser = user;
-  state.currentView = "chat";
+	closeStory();
+	state.activeChat = user;
+	state.selectedUser = user;
+	state.currentView = "chat";
 
-  prepareChatUI();
+	prepareChatUI();
 
-  if (elements.chatName) elements.chatName.textContent = user.username;
-  if (elements.chatAvatar) {
-    elements.chatAvatar.innerHTML = `<img src="${user.profilePic || DEFAULT_PROFILE_PIC}" alt="${user.username}" class="w-full h-full rounded-full object-cover">`;
-  }
-  if (elements.chatStatus)
-    elements.chatStatus.textContent = t("text-available");
+	if (elements.chatName) elements.chatName.textContent = user.username;
+	if (elements.chatAvatar) {
+		elements.chatAvatar.innerHTML = `<img src="${user.profilePic || DEFAULT_PROFILE_PIC}" alt="${user.username}" class="w-full h-full rounded-full object-cover">`;
+	}
+	if (elements.chatStatus) elements.chatStatus.textContent = t("text-available");
 
-  startCall(user.socketId);
+	startCall(user.socketId);
 }
 
 function closeChat() {
-  state.activeChat = null;
-  state.selectedUser = null;
-  state.currentView = null;
+	state.activeChat = null;
+	state.selectedUser = null;
+	state.currentView = null;
 
-  if (elements.chatContent) {
-    elements.chatContent.classList.add("hidden");
-    elements.chatContent.classList.remove("flex");
-  }
+	if (elements.chatContent) {
+		elements.chatContent.classList.add("hidden");
+		elements.chatContent.classList.remove("flex");
+	}
 
-  if (elements.chatPanel) {
-    elements.chatPanel.classList.remove("mobile-chat-open");
-    elements.chatPanel.classList.add("mobile-chat-closed");
-  }
+	if (elements.chatPanel) {
+		elements.chatPanel.classList.remove("mobile-chat-open");
+		elements.chatPanel.classList.add("mobile-chat-closed");
+	}
 
-  elements.noChatPlaceholder?.classList.remove("hidden");
-  if (elements.messagesContainer) elements.messagesContainer.innerHTML = "";
+	elements.noChatPlaceholder?.classList.remove("hidden");
+	if (elements.messagesContainer) elements.messagesContainer.innerHTML = "";
 }
 
 function toggleFloatingMenu() {
-  const menu = document.getElementById("floating-menu");
-  const isVisible = !menu.classList.contains("hidden");
+	const menu = document.getElementById("floating-menu");
+	const isVisible = !menu.classList.contains("hidden");
 
-  if (isVisible) {
-    menu.classList.add("hidden");
-    return;
-  }
+	if (isVisible) {
+		menu.classList.add("hidden");
+		return;
+	}
 
-  const copyBtn = document.getElementById("copy-id-btn");
-  const leaveBtn = document.getElementById("leave-btn");
+	const copyBtn = document.getElementById("copy-id-btn");
+	const leaveBtn = document.getElementById("leave-btn");
 
-  if (state.currentView === "chat") {
-    copyBtn.onclick = () => {
-      navigator.clipboard.writeText(state.selectedUser.socketId);
-      showToast(t("copied_id"));
-      menu.classList.add("hidden");
-    };
-    leaveBtn.classList.remove("hidden");
-    leaveBtn.onclick = () => {
-      handleChatDisconnect(false);
-      menu.classList.add("hidden");
-    };
-  }
+	if (state.currentView === "chat") {
+		copyBtn.onclick = () => {
+			navigator.clipboard.writeText(state.selectedUser.socketId);
+			showToast(t("copied_id"));
+			menu.classList.add("hidden");
+		};
+		leaveBtn.classList.remove("hidden");
+		leaveBtn.onclick = () => {
+			handleChatDisconnect(false);
+			menu.classList.add("hidden");
+		};
+	}
 
-  menu.classList.remove("hidden");
+	menu.classList.remove("hidden");
 }
 
 /*
  * 15. Utilities
  */
 function updateStatus(text) {
-  console.log("Status:", text);
-  if (text === CONNECTION_STATES.CONNECTED) {
-    state.connectionStatus = true;
-  } else if (text === CONNECTION_STATES.DISCONNECTED) {
-    state.connectionStatus = false;
-  }
+	console.log("Status:", text);
+	if (text === CONNECTION_STATES.CONNECTED) {
+		state.connectionStatus = true;
+	} else if (text === CONNECTION_STATES.DISCONNECTED) {
+		state.connectionStatus = false;
+	}
 }
 
 function timeAgo(timestamp) {
-  const diff = Date.now() - timestamp;
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  if (seconds < 60) return `${seconds} saniye önce paylaşıldı`;
-  if (minutes < 60) return `${minutes} dakika önce paylaşıldı`;
-  if (hours < 24) return `${hours} saat önce paylaşıldı`;
-  return `${days} gün önce paylaşıldı`;
+	const diff = Date.now() - timestamp;
+	const seconds = Math.floor(diff / 1000);
+	const minutes = Math.floor(seconds / 60);
+	const hours = Math.floor(minutes / 60);
+	const days = Math.floor(hours / 24);
+	if (seconds < 60) return `${seconds} saniye önce paylaşıldı`;
+	if (minutes < 60) return `${minutes} dakika önce paylaşıldı`;
+	if (hours < 24) return `${hours} saat önce paylaşıldı`;
+	return `${days} gün önce paylaşıldı`;
 }
 
 function playNotificationSound() {
-  let audio = document.getElementById("notification-sound");
-  if (!audio) {
-    audio = document.createElement("audio");
-    audio.id = "notification-sound";
-    audio.src = "assets/sounds/notification.mp3";
-    document.body.appendChild(audio);
-  }
-  audio.play().catch((e) => console.log("Audio play error:", e));
+	let audio = document.getElementById("notification-sound");
+	if (!audio) {
+		audio = document.createElement("audio");
+		audio.id = "notification-sound";
+		audio.src = "assets/sounds/notification.mp3";
+		document.body.appendChild(audio);
+	}
+	audio.play().catch((e) => console.log("Audio play error:", e));
 }
 
 function searchInCurrentTab(query) {
-  if (!state.isConnected) {
-    elements.chatsList.innerHTML = `<div class="text-center text-gray-500 dark:text-gray-400 py-10">${t("connecting")}</div>`;
-    return;
-  }
+	if (!state.isConnected) {
+		elements.chatsList.innerHTML = `<div class="text-center text-gray-500 dark:text-gray-400 py-10">${t("connecting")}</div>`;
+		return;
+	}
 
-  const q = query.trim().toLowerCase();
-  const settings = [
-    {
-      icon: `<i class="fas fa-copy"></i>`,
-      label: t("copy_id"),
-      onClick: () => {
-        navigator.clipboard.writeText(state.myId);
-        showToast(t("copied_id"));
-      },
-    },
-    {
-      icon: `<i class="fas fa-camera"></i>`,
-      label: t("upload_photo"),
-      onClick: () => document.getElementById("uploadAvatarInput")?.click(),
-    },
-    {
-      icon: `<i class="fas fa-user-secret"></i>`,
-      label: state.hiddenFromSearch
-        ? t("hidden_from_search")
-        : t("visible_in_search"),
-      onClick: () => toggleSearchVisibility(),
-    },
-    {
-      icon: `<i class="fas fa-globe"></i>`,
-      label: t("select_language"),
-      onClick: () => changeLanguage(),
-    },
-    {
-      icon: `<i class="fas fa-sign-out-alt"></i>`,
-      label: t("log_out"),
-      onClick: () => logoutUser(),
-    },
-  ];
+	const q = query.trim().toLowerCase();
+	const settings = [
+		{
+			icon: `<i class="fas fa-copy"></i>`,
+			label: t("copy_id"),
+			onClick: () => {
+				navigator.clipboard.writeText(state.myId);
+				showToast(t("copied_id"));
+			},
+		},
+		{
+			icon: `<i class="fas fa-camera"></i>`,
+			label: t("upload_photo"),
+			onClick: () => document.getElementById("uploadAvatarInput")?.click(),
+		},
+		{
+			icon: `<i class="fas fa-user-secret"></i>`,
+			label: state.hiddenFromSearch ? t("hidden_from_search") : t("visible_in_search"),
+			onClick: () => toggleSearchVisibility(),
+		},
+		{
+			icon: `<i class="fas fa-globe"></i>`,
+			label: t("select_language"),
+			onClick: () => changeLanguage(),
+		},
+		{
+			icon: `<i class="fas fa-sign-out-alt"></i>`,
+			label: t("log_out"),
+			onClick: () => logoutUser(),
+		},
+	];
 
-  if (activeTabId === "btnChats" || activeTabId === "mobBtnChats") {
-    renderChatSearchResults(
-      state.allUsers.filter(
-        (u) =>
-          u.socketId !== state.myId &&
-          !u.hidden &&
-          u.username.toLowerCase().includes(q),
-      ),
-    );
-  } else if (activeTabId === "btnStorys" || activeTabId === "mobBtnStorys") {
-    renderStorySearchResults(
-      Object.values(state.currentStories).filter((s) =>
-        s?.user?.username.toLowerCase().includes(q),
-      ),
-    );
-  } else if (
-    activeTabId === "btnSettings" ||
-    activeTabId === "mobBtnSettings"
-  ) {
-    renderSettingsSearchResults(
-      settings.filter((s) =>
-        s.label.toLowerCase().includes(query.toLowerCase()),
-      ),
-    );
-  }
+	if (activeTabId === "btnChats" || activeTabId === "mobBtnChats") {
+		renderChatSearchResults(state.allUsers.filter((u) => u.socketId !== state.myId && !u.hidden && u.username.toLowerCase().includes(q)));
+	} else if (activeTabId === "btnStorys" || activeTabId === "mobBtnStorys") {
+		renderStorySearchResults(Object.values(state.currentStories).filter((s) => s?.user?.username.toLowerCase().includes(q)));
+	} else if (activeTabId === "btnSettings" || activeTabId === "mobBtnSettings") {
+		renderSettingsSearchResults(settings.filter((s) => s.label.toLowerCase().includes(query.toLowerCase())));
+	}
 }
 
 function showToast(message) {
-  document.querySelector(".toast")?.remove();
+	document.querySelector(".toast")?.remove();
 
-  const toast = document.createElement("div");
-  toast.className =
-    "toast fixed top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300";
-  toast.textContent = message;
-  document.body.appendChild(toast);
+	const toast = document.createElement("div");
+	toast.className = "toast fixed top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300";
+	toast.textContent = message;
+	document.body.appendChild(toast);
 
-  requestAnimationFrame(() => toast.classList.remove("translate-x-full"));
-  setTimeout(() => {
-    toast.classList.add("translate-x-full");
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
+	requestAnimationFrame(() => toast.classList.remove("translate-x-full"));
+	setTimeout(() => {
+		toast.classList.add("translate-x-full");
+		setTimeout(() => toast.remove(), 300);
+	}, 3000);
 }
 
 /*
  * 16. Socket Events
  */
 socket.on("connect", () => {
-  state.isConnected = true;
-  initApp();
-  socket.emit("auth", savedUserId);
+	state.isConnected = true;
+	initApp();
+	socket.emit("auth", savedUserId);
 });
 
 socket.on("your-id", ({ socketId, persistentUserId, username, profilePic }) => {
-  state.myId = socketId;
-  state.myPersistentId = persistentUserId;
-  state.myUsername = username;
-  state.myProfilePic = profilePic || DEFAULT_PROFILE_PIC;
-  document.querySelector("#btnSettings img").src = state.myProfilePic;
-  document.querySelector("#mobBtnSettings img").src = state.myProfilePic;
-  console.log(
-    `Connected: socketId=${socketId}, persistentId=${persistentUserId}`,
-  );
+	state.myId = socketId;
+	state.myPersistentId = persistentUserId;
+	state.myUsername = username;
+	state.myProfilePic = profilePic || DEFAULT_PROFILE_PIC;
+	document.querySelector("#btnSettings img").src = state.myProfilePic;
+	document.querySelector("#mobBtnSettings img").src = state.myProfilePic;
+	console.log(`Connected: socketId=${socketId}, persistentId=${persistentUserId}`);
 });
 
 socket.on("auth_ok", ({ user }) => {
-  console.log("Auth successful:", user);
+	console.log("Auth successful:", user);
 });
 
 socket.on("auth_failed", (reason) => {
-  console.error("Auth failed:", reason);
-  alert("Authentication failed: " + reason);
-  localStorage.removeItem(STORAGE_KEYS.USER_ID);
-  window.location.href = "login.html";
+	console.error("Auth failed:", reason);
+	alert("Authentication failed: " + reason);
+	localStorage.removeItem(STORAGE_KEYS.USER_ID);
+	window.location.href = "login.html";
 });
 
 socket.on("nickname-restricted", (message) => {
-  alert(message || "Kullanıcı adınız kısıtlanmış.");
-  localStorage.removeItem(STORAGE_KEYS.USER_ID);
-  window.location.href = "login.html";
+	alert(message || "Kullanıcı adınız kısıtlanmış.");
+	localStorage.removeItem(STORAGE_KEYS.USER_ID);
+	window.location.href = "login.html";
 });
 
 socket.on("nickname-taken", (reason) => {
-  alert(
-    (reason || "Bu kullanıcı adı zaten kullanılıyor.") +
-      " Lütfen tekrar giriş yapın.",
-  );
-  localStorage.removeItem(STORAGE_KEYS.USER_ID);
-  window.location.href = "login.html";
+	alert((reason || "Bu kullanıcı adı zaten kullanılıyor.") + " Lütfen tekrar giriş yapın.");
+	localStorage.removeItem(STORAGE_KEYS.USER_ID);
+	window.location.href = "login.html";
 });
 
 socket.on("online-users", (users) => {
-  state.allUsers = users;
-  if (activeTabId === "btnChats" || activeTabId === "mobBtnChats")
-    renderChatsList();
+	state.allUsers = users;
+	if (activeTabId === "btnChats" || activeTabId === "mobBtnChats") renderChatsList();
 });
 
 socket.on("chat-disconnected", ({ from }) => {
-  if (state.remoteId === from) {
-    handleChatDisconnect(false);
-    renderChatsList();
-  }
+	if (state.remoteId === from) {
+		handleChatDisconnect(false);
+		renderChatsList();
+	}
 });
 
 socket.on("user-disconnected", (userId) => {
-  if (state.connectionStatus && state.remoteId === userId)
-    handleChatDisconnect(false);
-  renderChatsList();
+	if (state.connectionStatus && state.remoteId === userId) handleChatDisconnect(false);
+	renderChatsList();
 });
 
 socket.on("stories-updated", (stories) => {
-  state.currentStories = stories;
-  if (activeTabId === "btnStorys" || activeTabId === "mobBtnStorys")
-    renderStoriesList(stories);
+	state.currentStories = stories;
+	if (activeTabId === "btnStorys" || activeTabId === "mobBtnStorys") renderStoriesList(stories);
 });
 
 socket.on("incoming-call", async ({ from, cryptoPublicKey }) => {
-  const caller = state.allUsers.find((u) => u.socketId === from);
-  if (!caller) return;
+	const caller = state.allUsers.find((u) => u.socketId === from);
+	if (!caller) return;
 
-  if (state.connectionStatus) {
-    socket.emit("call-rejected", { targetId: from, reason: "Busy" });
-    return;
-  }
+	if (state.connectionStatus) {
+		socket.emit("call-rejected", { targetId: from, reason: "Busy" });
+		return;
+	}
 
-  const confirmConnect = confirm(`${caller.username} ${t("confirm_connect")}`);
-  if (!confirmConnect) {
-    socket.emit("call-rejected", { targetId: from, reason: "Rejected" });
-    return;
-  }
+	const confirmConnect = confirm(`${caller.username} ${t("confirm_connect")}`);
+	if (!confirmConnect) {
+		socket.emit("call-rejected", { targetId: from, reason: "Rejected" });
+		return;
+	}
 
-  state.remoteId = from;
-  try {
-    resetSessionCrypto();
-    const answerCryptoPublicKey = await prepareLocalCrypto();
-    if (cryptoPublicKey) await deriveSharedKey(cryptoPublicKey);
-    updateStatus("Yanıtlanıyor...");
+	state.remoteId = from;
+	try {
+		resetSessionCrypto();
+		const answerCryptoPublicKey = await prepareLocalCrypto();
+		if (cryptoPublicKey) await deriveSharedKey(cryptoPublicKey);
+		updateStatus("Yanıtlanıyor...");
 
-    closeStory();
-    state.activeChat = caller;
-    state.selectedUser = caller;
-    state.currentView = "chat";
-    prepareChatUI();
+		closeStory();
+		state.activeChat = caller;
+		state.selectedUser = caller;
+		state.currentView = "chat";
+		prepareChatUI();
 
-    if (elements.chatName) elements.chatName.textContent = caller.username;
-    if (elements.chatAvatar) {
-      elements.chatAvatar.innerHTML = `<img src="${caller.profilePic || DEFAULT_PROFILE_PIC}" alt="${caller.username}" class="w-full h-full rounded-full object-cover">`;
-    }
-    if (elements.chatStatus)
-      elements.chatStatus.textContent = t("text-available");
+		if (elements.chatName) elements.chatName.textContent = caller.username;
+		if (elements.chatAvatar) {
+			elements.chatAvatar.innerHTML = `<img src="${caller.profilePic || DEFAULT_PROFILE_PIC}" alt="${caller.username}" class="w-full h-full rounded-full object-cover">`;
+		}
+		if (elements.chatStatus) elements.chatStatus.textContent = t("text-available");
 
-    socket.emit("send-answer", {
-      targetId: state.remoteId,
-      cryptoPublicKey: answerCryptoPublicKey,
-    });
+		socket.emit("send-answer", {
+			targetId: state.remoteId,
+			cryptoPublicKey: answerCryptoPublicKey,
+		});
 
-    state.connectionStatus = true;
-    sessionStorage.setItem(STORAGE_KEYS.REMOTE_ID, from);
-    activateEncryptedRelay();
-  } catch (error) {
-    console.error("Error handling incoming call:", error);
-    handleChatDisconnect(false);
-  }
+		state.connectionStatus = true;
+		sessionStorage.setItem(STORAGE_KEYS.REMOTE_ID, from);
+		activateEncryptedRelay();
+	} catch (error) {
+		console.error("Error handling incoming call:", error);
+		handleChatDisconnect(false);
+	}
 });
 
 socket.on("call-answered", async ({ cryptoPublicKey }) => {
-  try {
-    if (cryptoPublicKey) await deriveSharedKey(cryptoPublicKey);
+	try {
+		if (cryptoPublicKey) await deriveSharedKey(cryptoPublicKey);
 
-    state.connectionStatus = true;
-    activateEncryptedRelay();
-    showToast(t("call_answered"));
-  } catch (error) {
-    console.error("Error handling call answer:", error);
-    handleChatDisconnect(false);
-  }
+		state.connectionStatus = true;
+		activateEncryptedRelay();
+		showToast(t("call_answered"));
+	} catch (error) {
+		console.error("Error handling call answer:", error);
+		handleChatDisconnect(false);
+	}
 });
 
 socket.on("relay-message", async ({ from, envelope }) => {
-  if (from !== state.remoteId || !envelope) return;
+	if (from !== state.remoteId || !envelope) return;
 
-  try {
-    handlePlainMessage(await decryptEnvelope(envelope));
-  } catch (error) {
-    console.error("Relay message decrypt error:", error);
-  }
+	try {
+		handlePlainMessage(await decryptEnvelope(envelope));
+	} catch (error) {
+		console.error("Relay message decrypt error:", error);
+	}
 });
 
 socket.on("call-rejected", ({ reason }) => {
-  updateStatus("Bağlantı reddedildi: " + reason);
-  showToast(t("busy"));
-  sessionStorage.removeItem(STORAGE_KEYS.REMOTE_ID);
-  clearSocketChatTimer();
-  resetSessionCrypto();
-  state.connectionStatus = false;
-  state.remoteId = null;
-  closeChat();
+	updateStatus("Bağlantı reddedildi: " + reason);
+	showToast(t("busy"));
+	sessionStorage.removeItem(STORAGE_KEYS.REMOTE_ID);
+	clearSocketChatTimer();
+	resetSessionCrypto();
+	state.connectionStatus = false;
+	state.remoteId = null;
+	closeChat();
 });
 
 /*
  * 17. Settings Functions
  */
 function logoutUser() {
-  localStorage.removeItem(STORAGE_KEYS.USER_ID);
-  window.location.href = "login.html";
+	localStorage.removeItem(STORAGE_KEYS.USER_ID);
+	window.location.href = "login.html";
 }
 
 function toggleSearchVisibility() {
-  state.hiddenFromSearch = !state.hiddenFromSearch;
-  localStorage.setItem(STORAGE_KEYS.HIDDEN, state.hiddenFromSearch);
-  showToast(
-    state.hiddenFromSearch ? t("hidden_from_search") : t("visible_in_search"),
-  );
-  socket.emit("update-visibility", { hidden: state.hiddenFromSearch });
-  renderSettingsList();
+	state.hiddenFromSearch = !state.hiddenFromSearch;
+	localStorage.setItem(STORAGE_KEYS.HIDDEN, state.hiddenFromSearch);
+	showToast(state.hiddenFromSearch ? t("hidden_from_search") : t("visible_in_search"));
+	socket.emit("update-visibility", { hidden: state.hiddenFromSearch });
+	renderSettingsList();
 }
 
 /*
  * 18. App Ready
  */
 document.addEventListener("DOMContentLoaded", () => {
-  initStoryFunctionality();
-  initProfilePictureUpload();
-  sessionStorage.removeItem(STORAGE_KEYS.REMOTE_ID);
-  localStorage.removeItem(STORAGE_KEYS.CONNECTION_STATUS);
-  if (elements.noChatPlaceholder)
-    elements.noChatPlaceholder.classList.remove("hidden");
-  if (elements.chatContent) elements.chatContent.classList.add("hidden");
+	initStoryFunctionality();
+	initProfilePictureUpload();
+	sessionStorage.removeItem(STORAGE_KEYS.REMOTE_ID);
+	localStorage.removeItem(STORAGE_KEYS.CONNECTION_STATUS);
+	if (elements.noChatPlaceholder) elements.noChatPlaceholder.classList.remove("hidden");
+	if (elements.chatContent) elements.chatContent.classList.add("hidden");
 });
 
 document.addEventListener("click", (e) => {
-  const menu = document.getElementById("floating-menu");
-  if (
-    !menu.contains(e.target) &&
-    !e.target.closest("[onclick='toggleFloatingMenu()']")
-  ) {
-    menu.classList.add("hidden");
-  }
+	const menu = document.getElementById("floating-menu");
+	if (!menu.contains(e.target) && !e.target.closest("[onclick='toggleFloatingMenu()']")) {
+		menu.classList.add("hidden");
+	}
 });
 
 window.sendMessage = sendMessage;
@@ -1403,28 +1362,28 @@ window.sendMessage = sendMessage;
  * 19. Translations
  */
 fetch("assets/config/translations.json")
-  .then((res) => res.json())
-  .then((data) => {
-    translations = data;
-    translatePage();
-    const chatListEl = document.getElementById("chats-list");
-    window._vcl = new VirtualizedChatList(chatListEl, {
-      itemHeight: 73,
-      overscan: 5,
-    });
-    renderChats();
-  });
+	.then((res) => res.json())
+	.then((data) => {
+		translations = data;
+		translatePage();
+		const chatListEl = document.getElementById("chats-list");
+		window._vcl = new VirtualizedChatList(chatListEl, {
+			itemHeight: 73,
+			overscan: 5,
+		});
+		renderChats();
+	});
 
 function t(key) {
-  return translations[currentLang]?.[key] || key;
+	return translations[currentLang]?.[key] || key;
 }
 
 function translatePage() {
-  document.querySelectorAll("[data-i18n]").forEach((el) => {
-    const key = el.getAttribute("data-i18n");
-    el.textContent = t(key);
-  });
-  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
-    el.setAttribute("placeholder", t(el.getAttribute("data-i18n-placeholder")));
-  });
+	document.querySelectorAll("[data-i18n]").forEach((el) => {
+		const key = el.getAttribute("data-i18n");
+		el.textContent = t(key);
+	});
+	document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+		el.setAttribute("placeholder", t(el.getAttribute("data-i18n-placeholder")));
+	});
 }
