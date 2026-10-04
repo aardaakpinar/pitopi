@@ -139,7 +139,7 @@ function makeChatItem(user, { t, openChat, DEFAULT_PROFILE_PIC }) {
       el.innerHTML = `
                 <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-medium shrink-0">
                     <img
-                        src="${user.profilePic || DEFAULT_PROFILE_PIC}"
+                        src="${escapeHtml(user.profilePic || DEFAULT_PROFILE_PIC)}"
                         alt="${escapeHtml(user.username)}"
                         class="w-full h-full rounded-full object-cover"
                         loading="lazy"
@@ -184,7 +184,7 @@ function makeStoryItem(storyData, { timeAgo, openStory, DEFAULT_PROFILE_PIC }) {
       el.innerHTML = `
                 <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-medium shrink-0">
                     <img
-                        src="${user.profilePic || DEFAULT_PROFILE_PIC}"
+                        src="${escapeHtml(user.profilePic || DEFAULT_PROFILE_PIC)}"
                         alt="${escapeHtml(user.username)}"
                         class="w-full h-full rounded-full object-cover"
                         loading="lazy"
@@ -385,7 +385,7 @@ function renderChatSearchResults(users) {
   if (!window._vcl) return;
 
   if (!users.length) {
-    window._vcl.setItems([makeEmptyItem("No matching users found.")]);
+    window._vcl.setItems([makeEmptyItem(t("no_matching_users"))]);
 
     return;
   }
@@ -405,7 +405,7 @@ function renderStorySearchResults(stories) {
   if (!window._vcl) return;
 
   if (!stories.length) {
-    window._vcl.setItems([makeEmptyItem("No matching stories found.")]);
+    window._vcl.setItems([makeEmptyItem(t("no_matching_stories"))]);
 
     return;
   }
@@ -425,7 +425,7 @@ function renderSettingsSearchResults(filteredSettings) {
   if (!window._vcl) return;
 
   if (!filteredSettings.length) {
-    window._vcl.setItems([makeEmptyItem("No matching settings found.")]);
+    window._vcl.setItems([makeEmptyItem(t("no_matching_settings"))]);
 
     return;
   }
@@ -433,54 +433,24 @@ function renderSettingsSearchResults(filteredSettings) {
   window._vcl.setItems(filteredSettings.map((s) => makeSettingItem(s)));
 }
 
+const LANGUAGE_ICONS = {
+  az: "https://img.icons8.com/?size=96&id=pHfpq4E7vg9Y&format=png",
+  tr: "https://img.icons8.com/?size=64&id=J6RJcdGoJomQ&format=png",
+  en: "https://img.icons8.com/?size=96&id=fIgZUHgwc76e&format=png",
+  ru: "https://img.icons8.com/?size=96&id=vioRCshpCBKv&format=png",
+};
+
 function changeLanguage() {
   if (!window._vcl) return;
 
-  const langs = [
-    {
-      icon: `<img src="https://img.icons8.com/?size=96&id=pHfpq4E7vg9Y&format=png">`,
-      label: "Azərbaycan dili",
-
-      onClick: () => {
-        localStorage.setItem(STORAGE_KEYS.LANG, "az");
-        currentLang = "az";
-        translatePage();
-      },
+  const langs = availableLanguages().map(({ code, name }) => ({
+    icon: LANGUAGE_ICONS[code] ? `<img src="${LANGUAGE_ICONS[code]}" alt="">` : "",
+    label: name,
+    onClick: () => {
+      setLanguage(code);
+      changeLanguage();
     },
-
-    {
-      icon: `<img src="https://img.icons8.com/?size=64&id=J6RJcdGoJomQ&format=png">`,
-      label: "Türkçe",
-
-      onClick: () => {
-        localStorage.setItem(STORAGE_KEYS.LANG, "tr");
-        currentLang = "tr";
-        translatePage();
-      },
-    },
-
-    {
-      icon: `<img src="https://img.icons8.com/?size=96&id=fIgZUHgwc76e&format=png">`,
-      label: "English",
-
-      onClick: () => {
-        localStorage.setItem(STORAGE_KEYS.LANG, "en");
-        currentLang = "en";
-        translatePage();
-      },
-    },
-
-    {
-      icon: `<img src="https://img.icons8.com/?size=96&id=vioRCshpCBKv&format=png">`,
-      label: "Русский",
-
-      onClick: () => {
-        localStorage.setItem(STORAGE_KEYS.LANG, "ru");
-        currentLang = "ru";
-        translatePage();
-      },
-    },
-  ];
+  }));
 
   window._vcl.setItems(langs.map((s) => makeSettingItem(s)));
 }

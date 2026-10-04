@@ -7,14 +7,15 @@ const STORAGE_KEYS = {
 	HIDDEN: "p2p_hidden",
 	REMOTE_ID: "p2p_remote_id",
 	CONNECTION_STATUS: "p2p_connection_status",
-	LANG: "p2p_current_lang",
 };
 
 const CONNECTION_STATES = {
-	CONNECTED: "Connection established",
-	CONNECTING: "Connecting...",
-	DISCONNECTED: "Connection lost",
-	FALLBACK: "Encrypted socket active",
+	CONNECTED: "connected",
+	CONNECTING: "connecting",
+	DISCONNECTED: "disconnected",
+	FALLBACK: "socket-fallback",
+	ANSWERING: "answering",
+	REJECTED: "rejected",
 };
 
 const SOCKET_SERVER = (() => {
@@ -136,8 +137,6 @@ const elements = {
 	},
 };
 
-let currentLang = localStorage.getItem(STORAGE_KEYS.LANG) || "en";
-let translations = {};
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
@@ -191,7 +190,7 @@ function initFileUpload() {
 				fileInput.value = "";
 			} catch (error) {
 				console.error("File send error:", error);
-				showSystemMessage("File send failed: " + error.message);
+				showSystemMessage(t("file_send_failed"));
 			}
 		};
 
@@ -217,7 +216,7 @@ async function removeImageMetadata(file) {
 			canvas.toBlob(
 				(blob) => {
 					if (!blob) {
-						reject(new Error("Canvas oluşturulamadı."));
+						reject(new Error("Canvas context unavailable"));
 						return;
 					}
 
@@ -312,9 +311,8 @@ function initProfilePictureUpload() {
  * 6. UI Render Functions
  */
 function getRandomMessage(key) {
-	const arr = translations[currentLang]?.[key];
-	if (Array.isArray(arr)) return arr[Math.floor(Math.random() * arr.length)];
-	return key;
+	const arr = tList(key);
+	return arr.length ? arr[Math.floor(Math.random() * arr.length)] : key;
 }
 
 function getFileIconClass(fileName = "", mimeType = "") {
@@ -343,28 +341,73 @@ function escapeHtml(unsafe) {
 	return String(unsafe).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-function renderFilePreview(fileMeta, from) {
-	const { name, mimeType, data } = fileMeta;
-	let content = "";
+const SAFE_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/avif", "image/bmp"];
 
-	if (mimeType.startsWith("image/")) {
-		content = `<img src="${data}" alt="${escapeHtml(name)}" class="max-w-[200px] rounded-lg" />`;
-	} else if (mimeType.startsWith("audio/")) {
-		content = `<audio controls src="${data}" class="mt-2"></audio>`;
-	} else {
-		const iconClass = getFileIconClass(name, mimeType);
-		content = `
-      <div class="flex items-center space-x-4 bg-gray-100 dark:bg-gray-800 p-3 rounded shadow-md max-w-md">
-        <div class="flex-shrink-0">
-          <i class="fas ${iconClass} text-3xl text-gray-600 dark:text-gray-300"></i>
-        </div>
-        <div class="flex-grow">
-          <p class="text-md font-semibold text-gray-900 dark:text-gray-100 truncate">${escapeHtml(name)}</p>
-          <a href="${data}" download="${name}" class="text-sm text-blue-600 hover:underline">Download File</a>
-        </div>
-      </div>`;
+function isDataUrl(value) {
+	return typeof value === "string" && /^data:[\w.+-]+\/[\w.+-]+(;[\w=.+-]+)*(;base64)?,/i.test(value);
+}
+
+function sanitizeFileName(name) {
+	return String(name || "file").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").slice(0, 128) || "file";
+}
+
+function renderFilePreview(fileMeta, from) {
+	const name = sanitizeFileName(fileMeta.name);
+	const mimeType = String(fileMeta.mimeType || "").toLowerCase();
+	const data = fileMeta.data;
+
+	// Peer-supplied data is never interpolated into HTML; only DOM APIs are used.
+	if (!isDataUrl(data)) {
+		logMessage(name, from);
+		return;
 	}
-	logMessage(content, from);
+
+	let node;
+	if (SAFE_IMAGE_TYPES.includes(mimeType)) {
+		node = document.createElement("img");
+		node.src = data;
+		node.alt = name;
+		node.className = "max-w-[200px] rounded-lg";
+	} else if (mimeType.startsWith("audio/")) {
+		node = document.createElement("audio");
+		node.controls = true;
+		node.src = data;
+		node.className = "mt-2";
+	} else {
+		node = document.createElement("div");
+		node.className = "flex items-center space-x-4 bg-gray-100 dark:bg-gray-800 p-3 rounded max-w-md";
+
+		const iconWrap = document.createElement("div");
+		iconWrap.className = "flex-shrink-0";
+		const icon = document.createElement("i");
+		icon.className = `fas ${getFileIconClass(name, mimeType)} text-3xl text-gray-600 dark:text-gray-300`;
+		iconWrap.appendChild(icon);
+
+		const info = document.createElement("div");
+		info.className = "flex-grow min-w-0";
+		const title = document.createElement("p");
+		title.className = "text-md font-semibold text-gray-900 dark:text-gray-100 truncate";
+		title.textContent = name;
+		const link = document.createElement("a");
+		link.href = data;
+		link.download = name;
+		link.rel = "noopener noreferrer";
+		link.className = "text-sm text-accent hover:underline";
+		link.textContent = t("download_file");
+		info.append(title, link);
+
+		node.append(iconWrap, info);
+	}
+	logMessage(node, from);
+}
+
+function setAvatar(container, src, alt) {
+	if (!container) return;
+	const img = document.createElement("img");
+	img.src = src || DEFAULT_PROFILE_PIC;
+	img.alt = alt || "";
+	img.className = "w-full h-full rounded-full object-cover";
+	container.replaceChildren(img);
 }
 
 function sendSafe(channel, data) {
@@ -472,7 +515,7 @@ function activateEncryptedRelay() {
 	updateStatus(CONNECTION_STATES.FALLBACK);
 	state.connectionStatus = true;
 	if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false;
-	if (elements.chatStatus) elements.chatStatus.textContent = "Encrypted socket";
+	if (elements.chatStatus) elements.chatStatus.textContent = t("status_encrypted");
 }
 
 /*
@@ -616,7 +659,7 @@ async function sendMessage() {
 	if (!text) return;
 
 	if (!state.remoteId || !state.crypto.sharedKey) {
-		showSystemMessage("Mesaj gönderilemedi. Bağlantı kapalı.");
+		showSystemMessage(t("message_send_closed"));
 		return;
 	}
 
@@ -626,7 +669,7 @@ async function sendMessage() {
 		elements.messageInput.value = "";
 	} catch (error) {
 		console.error("Error sending message:", error);
-		showSystemMessage("Mesaj gönderilemedi: " + error.message);
+		showSystemMessage(t("message_send_failed"));
 	}
 }
 
@@ -673,7 +716,7 @@ async function handleData(data) {
 			playNotificationSound();
 		} else if (msg.type === "typing") {
 			if (elements.chatStatus) {
-				elements.chatStatus.textContent = "Yazıyor...";
+				elements.chatStatus.textContent = t("typing");
 				elements.chatStatus.style.color = "orange";
 			}
 		} else if (msg.type === "stop-typing") {
@@ -722,7 +765,7 @@ function handlePlainMessage(msg) {
 		playNotificationSound();
 	} else if (msg.type === "typing") {
 		if (elements.chatStatus) {
-			elements.chatStatus.textContent = "Yaziyor...";
+			elements.chatStatus.textContent = t("typing");
 			elements.chatStatus.style.color = "orange";
 		}
 	} else if (msg.type === "stop-typing") {
@@ -753,11 +796,10 @@ function logMessage(text, from) {
 	const msgDiv = document.createElement("div");
 	msgDiv.className = `max-w-[80%] px-3 py-2 rounded-lg ${from === "me" ? "bg-messageBg-light dark:bg-messageBg-dark rounded-br-none" : "bg-messageBg-light dark:bg-messageBg-dark rounded-bl-none"}`;
 
-	const isHtml = text.includes("<img") || text.includes("<audio") || text.includes("<video") || text.includes("<div");
-
-	if (isHtml) {
-		msgDiv.innerHTML = text;
+	if (text instanceof Node) {
+		msgDiv.appendChild(text);
 	} else {
+		text = String(text ?? "");
 		const parts = text.split(/(https?:\/\/[^\s]+)/g);
 		parts.forEach((part) => {
 			if (part.match(/https?:\/\/[^\s]+/)) {
@@ -810,7 +852,7 @@ async function startCall(id) {
 	}
 
 	if (state.connectionStatus) {
-		const confirmReconnect = confirm("Zaten bir sohbete bağlısınız...");
+		const confirmReconnect = confirm(t("already_connected_confirm"));
 		if (!confirmReconnect) return;
 		handleChatDisconnect(false);
 	}
@@ -846,7 +888,7 @@ function handleChatDisconnect(useRelayFallback = true) {
 	updateStatus(CONNECTION_STATES.DISCONNECTED);
 
 	if (state.connectionStatus) {
-		showSystemMessage("Karşı taraf bağlantıyı kapattı veya bağlantı kaybedildi.");
+		showSystemMessage(t("peer_disconnected"));
 	}
 
 	if (state.remoteId) {
@@ -938,7 +980,7 @@ function openStory(user) {
 			if (deleteBtn) {
 				deleteBtn.classList.remove("hidden");
 				deleteBtn.onclick = () => {
-					if (confirm("Bu hikayeyi silmek istediğine emin misin?")) {
+					if (confirm(t("story_delete_confirm"))) {
 						socket.emit("delete-story", { storyId: story.id });
 						closeStory();
 					}
@@ -1024,7 +1066,7 @@ function openChat(user) {
 
 	if (elements.chatName) elements.chatName.textContent = user.username;
 	if (elements.chatAvatar) {
-		elements.chatAvatar.innerHTML = `<img src="${user.profilePic || DEFAULT_PROFILE_PIC}" alt="${user.username}" class="w-full h-full rounded-full object-cover">`;
+		setAvatar(elements.chatAvatar, user.profilePic, user.username);
 	}
 	if (elements.chatStatus) elements.chatStatus.textContent = t("text-available");
 
@@ -1096,10 +1138,10 @@ function timeAgo(timestamp) {
 	const minutes = Math.floor(seconds / 60);
 	const hours = Math.floor(minutes / 60);
 	const days = Math.floor(hours / 24);
-	if (seconds < 60) return `${seconds} saniye önce paylaşıldı`;
-	if (minutes < 60) return `${minutes} dakika önce paylaşıldı`;
-	if (hours < 24) return `${hours} saat önce paylaşıldı`;
-	return `${days} gün önce paylaşıldı`;
+	if (seconds < 60) return t("time_seconds_ago", { n: seconds });
+	if (minutes < 60) return t("time_minutes_ago", { n: minutes });
+	if (hours < 24) return t("time_hours_ago", { n: hours });
+	return t("time_days_ago", { n: days });
 }
 
 function playNotificationSound() {
@@ -1198,21 +1240,27 @@ socket.on("auth_ok", ({ user }) => {
 	console.log("Auth successful:", user);
 });
 
-socket.on("auth_failed", (reason) => {
-	console.error("Auth failed:", reason);
-	alert("Authentication failed: " + reason);
+function serverMessage(code, params) {
+	const key = `server_${code}`;
+	return hasTranslation(key) ? t(key, params) : t("server_error");
+}
+
+socket.on("auth_failed", (payload) => {
+	const { code, params } = typeof payload === "object" && payload ? payload : { code: payload };
+	console.error("Auth failed:", code);
+	alert(t("auth_failed", { reason: serverMessage(code, params) }));
 	localStorage.removeItem(STORAGE_KEYS.USER_ID);
 	window.location.href = "login.html";
 });
 
-socket.on("nickname-restricted", (message) => {
-	alert(message || "Kullanıcı adınız kısıtlanmış.");
+socket.on("nickname-restricted", () => {
+	alert(t("nickname_restricted"));
 	localStorage.removeItem(STORAGE_KEYS.USER_ID);
 	window.location.href = "login.html";
 });
 
-socket.on("nickname-taken", (reason) => {
-	alert((reason || "Bu kullanıcı adı zaten kullanılıyor.") + " Lütfen tekrar giriş yapın.");
+socket.on("nickname-taken", () => {
+	alert(t("nickname_taken"));
 	localStorage.removeItem(STORAGE_KEYS.USER_ID);
 	window.location.href = "login.html";
 });
@@ -1244,13 +1292,13 @@ socket.on("incoming-call", async ({ from, cryptoPublicKey }) => {
 	if (!caller) return;
 
 	if (state.connectionStatus) {
-		socket.emit("call-rejected", { targetId: from, reason: "Busy" });
+		socket.emit("call-rejected", { targetId: from, reason: "busy" });
 		return;
 	}
 
 	const confirmConnect = confirm(`${caller.username} ${t("confirm_connect")}`);
 	if (!confirmConnect) {
-		socket.emit("call-rejected", { targetId: from, reason: "Rejected" });
+		socket.emit("call-rejected", { targetId: from, reason: "rejected" });
 		return;
 	}
 
@@ -1259,7 +1307,7 @@ socket.on("incoming-call", async ({ from, cryptoPublicKey }) => {
 		resetSessionCrypto();
 		const answerCryptoPublicKey = await prepareLocalCrypto();
 		if (cryptoPublicKey) await deriveSharedKey(cryptoPublicKey);
-		updateStatus("Yanıtlanıyor...");
+		updateStatus(CONNECTION_STATES.ANSWERING);
 
 		closeStory();
 		state.activeChat = caller;
@@ -1269,7 +1317,7 @@ socket.on("incoming-call", async ({ from, cryptoPublicKey }) => {
 
 		if (elements.chatName) elements.chatName.textContent = caller.username;
 		if (elements.chatAvatar) {
-			elements.chatAvatar.innerHTML = `<img src="${caller.profilePic || DEFAULT_PROFILE_PIC}" alt="${caller.username}" class="w-full h-full rounded-full object-cover">`;
+			setAvatar(elements.chatAvatar, caller.profilePic, caller.username);
 		}
 		if (elements.chatStatus) elements.chatStatus.textContent = t("text-available");
 
@@ -1311,7 +1359,7 @@ socket.on("relay-message", async ({ from, envelope }) => {
 });
 
 socket.on("call-rejected", ({ reason }) => {
-	updateStatus("Bağlantı reddedildi: " + reason);
+	updateStatus(CONNECTION_STATES.REJECTED);
 	showToast(t("busy"));
 	sessionStorage.removeItem(STORAGE_KEYS.REMOTE_ID);
 	clearSocketChatTimer();
@@ -1359,31 +1407,13 @@ document.addEventListener("click", (e) => {
 window.sendMessage = sendMessage;
 
 /*
- * 19. Translations
+ * 19. Translations (see i18n.js)
  */
-fetch("assets/config/translations.json")
-	.then((res) => res.json())
-	.then((data) => {
-		translations = data;
-		translatePage();
-		const chatListEl = document.getElementById("chats-list");
-		window._vcl = new VirtualizedChatList(chatListEl, {
-			itemHeight: 73,
-			overscan: 5,
-		});
-		renderChats();
+i18nReady.then(() => {
+	const chatListEl = document.getElementById("chats-list");
+	window._vcl = new VirtualizedChatList(chatListEl, {
+		itemHeight: 73,
+		overscan: 5,
 	});
-
-function t(key) {
-	return translations[currentLang]?.[key] || key;
-}
-
-function translatePage() {
-	document.querySelectorAll("[data-i18n]").forEach((el) => {
-		const key = el.getAttribute("data-i18n");
-		el.textContent = t(key);
-	});
-	document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
-		el.setAttribute("placeholder", t(el.getAttribute("data-i18n-placeholder")));
-	});
-}
+	renderChats();
+});

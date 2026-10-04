@@ -1,5 +1,11 @@
-* {
+body {
   user-select: none;
+}
+/* Messages and inputs must stay selectable/copyable */
+#messages-container,
+input,
+textarea {
+  user-select: text;
 }
 
 /* Custom scrollbar */
@@ -22,15 +28,13 @@
 @keyframes message-in {
   from {
     opacity: 0;
-    transform: translateY(20px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 .message-animation {
-  animation: message-in 0.3s ease-out forwards;
+  animation: message-in 0.15s ease-out forwards;
 }
 
 /* Search highlight effect */
@@ -78,56 +82,12 @@
   }
 }
 .toast {
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.2s ease-in-out;
 }
 
-/* LOGIN */
-
-.cloud {
-  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
-  border-radius: 50px;
-  position: relative;
-}
-
-.cloud::before,
-.cloud::after {
-  content: "";
-  position: absolute;
-  background: inherit;
-  border-radius: 50px;
-}
-
-.cloud::before {
-  width: 50px;
-  height: 50px;
-  top: -25px;
-  left: 10px;
-}
-
-.cloud::after {
-  width: 60px;
-  height: 60px;
-  top: -35px;
-  right: 15px;
-}
-
-.paper-plane {
-  width: 0;
-  height: 0;
-  border-left: 20px solid #3b82f6;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  position: relative;
-}
-
-.paper-plane::before {
-  content: "";
-  position: absolute;
-  left: -20px;
-  top: -4px;
-  width: 0;
-  height: 0;
-  border-left: 12px solid #2563eb;
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }

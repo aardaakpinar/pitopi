@@ -42,3 +42,16 @@ export const RATE_LIMIT_CONFIG = {
 export const SUSPICIOUS_THRESHOLD = 20;
 
 export const PORT = process.env.PORT || 3000;
+
+// Machine-readable error codes sent to clients. The client owns all
+// user-facing text (app/assets/config/translations.json, "server_<code>" keys).
+export const ERROR_CODES = {
+  INVALID_USER_ID: "invalid_user_id",
+  USER_NOT_FOUND: "user_not_found",
+  TOO_MANY_REQUESTS: "too_many_requests",
+  RATE_LIMITED: "rate_limited",
+  AUTH_ERROR: "auth_error",
+  FILE_TOO_LARGE: "file_too_large",
+  SERVER_ERROR: "server_error",
+  BUSY: "busy",
+} as const;

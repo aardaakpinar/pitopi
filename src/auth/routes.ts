@@ -5,6 +5,7 @@ import { promisify } from "util";
 import { dbf } from "../config/firebase.js";
 import { isRateLimited, isBanned, getRemainingBanTime, recordFailedAttempt, recordSuccessfulAttempt } from "./bruteForce.js";
 import { logToFirebase } from "../utils/logging.js";
+import { ERROR_CODES } from "../config/constants.js";
 
 // ==================== AUTHENTICATION SYSTEM ====================
 
@@ -74,7 +75,7 @@ export function setupAuthRoutes(app: express.Application) {
 				ip: clientIp,
 				endpoint: "/signup",
 			});
-			return res.status(429).json({ error: "Çok fazla istek." });
+			return res.status(429).json({ error: ERROR_CODES.TOO_MANY_REQUESTS });
 		}
 
 		let rawToken: Buffer;
@@ -93,7 +94,7 @@ export function setupAuthRoutes(app: express.Application) {
 				break;
 			} catch (err: any) {
 				if (err.code === 6) {
-					console.warn("⚠️ Token hash collision, regenerating...");
+					console.warn("Token hash collision, regenerating...");
 					continue;
 				}
 				throw err;
@@ -117,16 +118,17 @@ export function setupAuthRoutes(app: express.Application) {
 			const remaining = getRemainingBanTime(clientIp, "login");
 			return res.status(429).json({
 				success: false,
-				error: `${remaining} dakika sonra tekrar dene.`,
+				error: ERROR_CODES.RATE_LIMITED,
+				params: { minutes: remaining },
 			});
 		}
 
 		if (isRateLimited(clientIp)) {
 			await logToFirebase("RATE_LIMITED", { ip: clientIp, endpoint: "/login" });
-			return res.status(429).json({ success: false, error: "Çok fazla istek." });
+			return res.status(429).json({ success: false, error: ERROR_CODES.TOO_MANY_REQUESTS });
 		}
 
-		// Dosya tam olarak beklenen formatta değilse reddet — içeriği hiç işleme
+		// Reject anything that is not exactly the expected key file format, before processing its content
 		if (!req.file || !isValidKeyFile(req.file.buffer)) {
 			recordFailedAttempt(clientIp, "login");
 			return res.json({ success: false });
@@ -176,9 +178,9 @@ export function setupAuthRoutes(app: express.Application) {
 
 	app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
 		if (err.code === "LIMIT_FILE_SIZE") {
-			return res.status(400).json({ success: false, error: "Dosya çok büyük." });
+			return res.status(400).json({ success: false, error: ERROR_CODES.FILE_TOO_LARGE });
 		}
 		console.error("Unhandled error:", err);
-		res.status(500).json({ success: false, error: "Sunucu hatası." });
+		res.status(500).json({ success: false, error: ERROR_CODES.SERVER_ERROR });
 	});
 }

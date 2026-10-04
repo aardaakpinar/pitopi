@@ -23,27 +23,8 @@ tailwind.config = {
           dark: "#13131a",
         },
       },
-      animation: {
-        float: "float 6s ease-in-out infinite",
-        "float-delayed": "float 6s ease-in-out infinite 2s",
-        "plane-fly": "plane-fly 8s ease-in-out infinite",
-      },
-      keyframes: {
-        float: {
-          "0%, 100%": { transform: "translateY(0px)" },
-          "50%": { transform: "translateY(-20px)" },
-        },
-        "plane-fly": {
-          "0%": {
-            transform: "translateX(-50px) translateY(10px) rotate(-5deg)",
-          },
-          "50%": {
-            transform: "translateX(20px) translateY(-30px) rotate(5deg)",
-          },
-          "100%": {
-            transform: "translateX(-50px) translateY(10px) rotate(-5deg)",
-          },
-        },
+      fontFamily: {
+        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"],
       },
     },
   },

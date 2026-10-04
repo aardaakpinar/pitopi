@@ -47,5 +47,5 @@ server.on("error", (error: NodeJS.ErrnoException) => {
 });
 
 server.listen(PORT, () => {
-	console.log(`✨ Pitopi server running at http://localhost:${PORT}`);
+	console.log(`Pitopi server running at http://localhost:${PORT}`);
 });

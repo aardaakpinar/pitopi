@@ -1,4 +1,4 @@
-const CACHE_NAME = "pitopi-v2";
+const CACHE_NAME = "pitopi-v4";
 const urlsToCache = [
   "/",
   "/index.html",
@@ -7,6 +7,8 @@ const urlsToCache = [
   "/assets/style/style.css",
   "/assets/style/login.css",
   "/assets/img/boringavatar.svg",
+  "/assets/script/i18n.js",
+  "/assets/config/translations.json",
 ];
 
 self.addEventListener("install", (event) => {

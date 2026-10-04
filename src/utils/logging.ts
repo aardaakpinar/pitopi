@@ -68,6 +68,6 @@ export async function logToFirebase(event: string, data: Record<string, any>) {
       ...sanitized,
     });
   } catch (err) {
-    console.error("❗ Log write error:", err);
+    console.error("Log write error:", err);
   }
 }
