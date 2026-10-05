@@ -2,6 +2,8 @@
 
 /* ==================== VARIABLES ==================== */
 :root {
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --bg: #060608;
   --surface: #0d0d12;
   --surface2: #13131a;
@@ -28,8 +30,9 @@ html {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: "DM Sans", sans-serif;
-  font-weight: 300;
+  font-family: var(--font);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
 
@@ -43,18 +46,17 @@ nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 60px;
-  background: rgba(6, 6, 8, 0.8);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 16px 60px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
 .nav-logo {
   display: flex;
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  font-family: "Syne", sans-serif;
-  font-weight: 800;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: 1.2rem;
   color: var(--text);
   letter-spacing: -0.02em;
@@ -62,7 +64,7 @@ nav {
 .nav-logo img {
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 .nav-links {
   display: flex;
@@ -71,15 +73,13 @@ nav {
   list-style: none;
 }
 .nav-links a {
-  font-family: "DM Mono", monospace;
-  font-size: 0.75rem;
+  font-family: var(--font);
+  font-size: 0.875rem;
   color: var(--muted);
   text-decoration: none;
-  padding: 6px 14px;
+  padding: 8px 14px;
   border-radius: 6px;
-  transition: all 0.2s;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  transition: color 0.15s, background 0.15s;
 }
 .nav-links a:hover,
 .nav-links a.active {
@@ -87,13 +87,15 @@ nav {
   background: var(--subtle);
 }
 .nav-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background: var(--accent) !important;
   color: white !important;
   font-weight: 500 !important;
 }
 .nav-cta:hover {
   background: #3d5ce8 !important;
-  transform: translateY(-1px);
 }
 
 /* ==================== PAGE HEADER (shared) ==================== */
@@ -104,25 +106,26 @@ nav {
   border-bottom: 1px solid var(--border);
 }
 .page-tag {
-  font-family: "DM Mono", monospace;
-  font-size: 0.7rem;
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
   color: var(--accent);
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   margin-bottom: 16px;
 }
 .page-title {
-  font-family: "Syne", sans-serif;
-  font-weight: 800;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: clamp(2.5rem, 5vw, 4rem);
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
   line-height: 1;
   margin-bottom: 16px;
 }
 .page-sub {
   font-size: 1rem;
   color: var(--muted);
-  max-width: 480px;
+  max-width: 540px;
   line-height: 1.7;
 }
 
@@ -134,17 +137,15 @@ nav {
   padding: 14px 28px;
   background: var(--accent);
   color: white;
-  border-radius: 10px;
+  border-radius: 6px;
   text-decoration: none;
   font-weight: 500;
   font-size: 0.95rem;
-  transition: all 0.2s;
+  transition: background 0.15s;
   border: none;
 }
 .btn-primary:hover {
   background: #3d5ce8;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(79, 110, 247, 0.3);
 }
 .btn-secondary {
   display: inline-flex;
@@ -153,11 +154,11 @@ nav {
   padding: 14px 28px;
   background: transparent;
   color: var(--text);
-  border-radius: 10px;
+  border-radius: 6px;
   text-decoration: none;
   font-weight: 400;
   font-size: 0.95rem;
-  transition: all 0.2s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
   border: 1px solid var(--border);
 }
 .btn-secondary:hover {
@@ -175,8 +176,8 @@ footer {
   justify-content: space-between;
 }
 .footer-logo {
-  font-family: "Syne", sans-serif;
-  font-weight: 800;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: 1rem;
   color: var(--muted);
   letter-spacing: -0.02em;
@@ -187,62 +188,19 @@ footer {
   list-style: none;
 }
 .footer-links a {
-  font-family: "DM Mono", monospace;
-  font-size: 0.7rem;
+  font-family: var(--font);
+  font-size: 0.85rem;
   color: var(--muted);
   text-decoration: none;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  transition: color 0.2s;
+  transition: color 0.15s;
 }
 .footer-links a:hover {
   color: var(--text);
 }
 .footer-copy {
-  font-family: "DM Mono", monospace;
-  font-size: 0.65rem;
-  color: var(--subtle);
-  letter-spacing: 0.04em;
-}
-
-/* ==================== ANIMATIONS ==================== */
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(0.8);
-  }
-}
-@keyframes blink {
-  50% {
-    opacity: 0;
-  }
-}
-
-.reveal {
-  opacity: 0;
-  transform: translateY(24px);
-  transition:
-    opacity 0.6s ease,
-    transform 0.6s ease;
-}
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
+  font-family: var(--font);
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 
 /* ==================== SECTION SHARED ==================== */
@@ -252,25 +210,26 @@ footer {
   margin: 0 auto;
 }
 .section-tag {
-  font-family: "DM Mono", monospace;
-  font-size: 0.7rem;
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
   color: var(--accent);
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   margin-bottom: 16px;
 }
 .section-title {
-  font-family: "Syne", sans-serif;
-  font-weight: 800;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: clamp(2rem, 4vw, 3.2rem);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   line-height: 1.1;
   margin-bottom: 16px;
 }
 .section-sub {
   font-size: 1rem;
   color: var(--muted);
-  max-width: 480px;
+  max-width: 540px;
   line-height: 1.7;
 }
 .divider {
@@ -280,7 +239,7 @@ footer {
 }
 
 code {
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
   font-size: 0.8rem;
   background: var(--subtle);
   padding: 2px 7px;
@@ -300,73 +259,30 @@ code {
   position: relative;
   overflow: hidden;
 }
-.hero-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(79, 110, 247, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(79, 110, 247, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black, transparent);
-}
-.hero-glow {
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(
-    circle,
-    rgba(79, 110, 247, 0.08) 0%,
-    transparent 70%
-  );
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-.hero-glow2 {
-  position: absolute;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(
-    circle,
-    rgba(124, 58, 237, 0.06) 0%,
-    transparent 70%
-  );
-  top: 30%;
-  right: 10%;
-  pointer-events: none;
-}
 .hero-badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  padding: 7px 14px;
   background: var(--surface2);
   border: 1px solid var(--border);
-  border-radius: 100px;
-  font-family: "DM Mono", monospace;
-  font-size: 0.7rem;
+  border-radius: 6px;
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 500;
   color: var(--muted);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   margin-bottom: 32px;
-  animation: fadeUp 0.6s ease both;
 }
-.hero-badge span {
-  width: 6px;
-  height: 6px;
-  background: #22c55e;
-  border-radius: 50%;
-  animation: pulse 2s ease infinite;
+.hero-badge svg {
+  color: var(--accent);
 }
 .hero h1 {
-  font-family: "Syne", sans-serif;
-  font-weight: 800;
-  font-size: clamp(3rem, 8vw, 6.5rem);
-  line-height: 0.95;
-  letter-spacing: -0.04em;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
   margin-bottom: 28px;
-  animation: fadeUp 0.6s ease 0.1s both;
 }
 .hero h1 .line1 {
   display: block;
@@ -374,10 +290,7 @@ code {
 }
 .hero h1 .line2 {
   display: block;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent);
 }
 .hero p {
   max-width: 520px;
@@ -385,14 +298,12 @@ code {
   line-height: 1.7;
   color: var(--muted);
   margin-bottom: 48px;
-  animation: fadeUp 0.6s ease 0.2s both;
 }
 .hero-actions {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
-  animation: fadeUp 0.6s ease 0.3s both;
 }
 
 /* INDEX — STATS */
@@ -402,10 +313,9 @@ code {
   justify-content: center;
   margin-top: 80px;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
   background: var(--surface);
-  animation: fadeUp 0.6s ease 0.4s both;
   max-width: 600px;
   width: 100%;
 }
@@ -419,14 +329,14 @@ code {
   border-right: none;
 }
 .stat-value {
-  font-family: "Syne", sans-serif;
-  font-weight: 800;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: 1.8rem;
   color: var(--text);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 .stat-label {
-  font-family: "DM Mono", monospace;
+  font-family: var(--font);
   font-size: 0.65rem;
   color: var(--muted);
   text-transform: uppercase;
@@ -447,44 +357,33 @@ code {
   gap: 1px;
   background: var(--border);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 8px;
   overflow: hidden;
   margin-top: 60px;
 }
 .feature-card {
   background: var(--surface);
-  padding: 40px 36px;
-  transition: background 0.2s;
-  position: relative;
-  overflow: hidden;
-}
-.feature-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, var(--accent-glow), transparent);
-  opacity: 0;
-  transition: opacity 0.3s;
+  padding: 36px 32px;
+  transition: background 0.15s;
 }
 .feature-card:hover {
   background: var(--surface2);
 }
-.feature-card:hover::before {
-  opacity: 1;
-}
 .feature-icon {
   width: 44px;
   height: 44px;
-  background: var(--subtle);
-  border-radius: 12px;
+  background: var(--accent-glow);
+  border: 1px solid rgba(79, 110, 247, 0.2);
+  color: var(--accent);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   margin-bottom: 20px;
 }
 .feature-title {
-  font-family: "Syne", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: 1.05rem;
   margin-bottom: 10px;
@@ -506,7 +405,6 @@ code {
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  padding: 120px 60px;
   gap: 80px;
   align-items: center;
 }
@@ -526,7 +424,7 @@ code {
   border-bottom: none;
 }
 .step-num {
-  font-family: "DM Mono", monospace;
+  font-family: var(--font);
   font-size: 0.7rem;
   color: var(--accent);
   letter-spacing: 0.05em;
@@ -534,7 +432,7 @@ code {
   padding-top: 3px;
 }
 .step-content h4 {
-  font-family: "Syne", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: 1rem;
   margin-bottom: 6px;
@@ -549,9 +447,9 @@ code {
 .terminal {
   background: #080810;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
 }
 .terminal-bar {
   display: flex;
@@ -561,58 +459,28 @@ code {
   background: var(--surface2);
   border-bottom: 1px solid var(--border);
 }
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-.dot-r {
-  background: #ff5f57;
-}
-.dot-y {
-  background: #febc2e;
-}
-.dot-g {
-  background: #28c840;
-}
 .terminal-title {
   font-size: 0.7rem;
   color: var(--muted);
-  margin-left: auto;
-  margin-right: auto;
-  letter-spacing: 0.05em;
+  font-family: var(--font);
+  font-weight: 500;
 }
 .terminal-body {
-  font-size: 0.78rem;
-  line-height: 1.8;
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 /* INDEX — CTA */
 .cta-section {
   padding: 120px 60px;
   text-align: center;
-  position: relative;
-  overflow: hidden;
-}
-.cta-glow {
-  position: absolute;
-  width: 500px;
-  height: 300px;
-  background: radial-gradient(
-    ellipse,
-    rgba(79, 110, 247, 0.1) 0%,
-    transparent 70%
-  );
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
 }
 .cta-section h2 {
-  font-family: "Syne", sans-serif;
-  font-weight: 800;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: clamp(2.5rem, 5vw, 4rem);
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
   line-height: 1;
   margin-bottom: 20px;
 }
@@ -641,7 +509,7 @@ code {
   top: 100px;
 }
 .help-nav-title {
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
   font-size: 0.65rem;
   color: var(--muted);
   text-transform: uppercase;
@@ -685,7 +553,7 @@ code {
   border-bottom: none;
 }
 .help-section-title {
-  font-family: "Syne", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: 1.5rem;
   letter-spacing: -0.02em;
@@ -696,7 +564,7 @@ code {
 .faq-item {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   margin-bottom: 8px;
   overflow: hidden;
 }
@@ -714,7 +582,7 @@ code {
   background: var(--surface2);
 }
 .faq-arrow {
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
   color: var(--muted);
   transition: transform 0.2s;
   font-size: 0.8rem;
@@ -747,7 +615,7 @@ code {
   padding: 24px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   transition: border-color 0.2s;
 }
 .guide-step:hover {
@@ -762,13 +630,13 @@ code {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
   font-size: 0.75rem;
   color: var(--accent);
   flex-shrink: 0;
 }
 .guide-body h4 {
-  font-family: "Syne", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: 0.95rem;
   margin-bottom: 6px;
@@ -783,7 +651,7 @@ code {
 .warning-box {
   background: rgba(245, 158, 11, 0.06);
   border: 1px solid rgba(245, 158, 11, 0.2);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 20px 24px;
   display: flex;
   gap: 14px;
@@ -803,7 +671,7 @@ code {
 .info-box {
   background: var(--accent-glow);
   border: 1px solid rgba(79, 110, 247, 0.2);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 20px 24px;
   display: flex;
   gap: 14px;
@@ -838,7 +706,7 @@ code {
 .stack-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 8px;
   padding: 24px;
   transition: all 0.2s;
   text-decoration: none;
@@ -854,13 +722,13 @@ code {
   margin-bottom: 12px;
 }
 .stack-name {
-  font-family: "Syne", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: 0.95rem;
   margin-bottom: 6px;
 }
 .stack-role {
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
   font-size: 0.7rem;
   color: var(--muted);
   text-transform: uppercase;
@@ -871,10 +739,10 @@ code {
 .code-block {
   background: #080810;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 8px;
   overflow: hidden;
   margin-bottom: 32px;
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
 }
 .code-header {
   display: flex;
@@ -934,10 +802,10 @@ code {
 .arch-diagram {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 8px;
   padding: 40px;
   margin-bottom: 80px;
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
   font-size: 0.8rem;
   line-height: 2.2;
   color: var(--muted);
@@ -975,11 +843,11 @@ code {
 .event-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 20px 24px;
 }
 .event-name {
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
   font-size: 0.8rem;
   color: var(--accent);
   margin-bottom: 6px;
@@ -988,7 +856,7 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
   font-size: 0.65rem;
   padding: 2px 8px;
   border-radius: 4px;
@@ -1029,7 +897,7 @@ code {
   padding: 0 60px 100px;
 }
 .costs-title {
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
   font-size: 0.7rem;
   color: var(--muted);
   text-transform: uppercase;
@@ -1040,7 +908,7 @@ code {
 .costs-table {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
   margin-bottom: 60px;
 }
@@ -1073,13 +941,13 @@ code {
   color: var(--text);
 }
 .costs-note {
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
   font-size: 0.7rem;
   color: var(--muted);
   margin-top: 2px;
 }
 .costs-amount {
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
   font-size: 0.85rem;
   color: var(--accent);
   text-align: right;
@@ -1087,7 +955,7 @@ code {
 .costs-total {
   background: var(--surface2);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 20px 28px;
   display: flex;
   justify-content: space-between;
@@ -1095,13 +963,13 @@ code {
   margin-bottom: 60px;
 }
 .costs-total-label {
-  font-family: "Syne", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: 1rem;
 }
 .costs-total-amount {
-  font-family: "Syne", sans-serif;
-  font-weight: 800;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: 1.4rem;
   color: var(--accent);
 }
@@ -1116,7 +984,7 @@ code {
 .donate-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 8px;
   padding: 28px 24px;
   text-align: center;
   transition: all 0.2s;
@@ -1138,7 +1006,7 @@ code {
   transform: translateX(-50%);
   background: var(--accent);
   color: white;
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1147,15 +1015,15 @@ code {
   white-space: nowrap;
 }
 .donate-amount {
-  font-family: "Syne", sans-serif;
-  font-weight: 800;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: 2rem;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin-bottom: 4px;
 }
 .donate-period {
-  font-family: "DM Mono", monospace;
+  font-family: var(--mono);
   font-size: 0.7rem;
   color: var(--muted);
   text-transform: uppercase;
@@ -1175,8 +1043,8 @@ code {
   padding: 0 60px 100px;
 }
 .methods-title {
-  font-family: "Syne", sans-serif;
-  font-weight: 800;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: 1.6rem;
   letter-spacing: -0.02em;
   margin-bottom: 8px;
@@ -1197,7 +1065,7 @@ code {
 .method-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 8px;
   padding: 24px 28px;
   display: flex;
   align-items: center;
@@ -1218,7 +1086,7 @@ code {
   flex-shrink: 0;
 }
 .method-name {
-  font-family: "Syne", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: 1rem;
   margin-bottom: 4px;
@@ -1243,7 +1111,7 @@ code {
   text-align: center;
 }
 .manifesto-quote {
-  font-family: "Syne", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: clamp(1.4rem, 3vw, 2rem);
   letter-spacing: -0.02em;

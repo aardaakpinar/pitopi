@@ -11,9 +11,10 @@
 		<meta property="og:image" content="https://aardaakpinar.github.io/images/logos/pitopi.png" />
 		<title>Pitopi</title>
 		<link rel="icon" href="https://aardaakpinar.github.io/images/logos/pitopi.png" />
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
 		<link rel="stylesheet" href="assets/style.css" />
-		<script src="https://cdn.tailwindcss.com"></script>
 	</head>
 	<body>
 		<nav>
@@ -27,19 +28,15 @@
 					<a href="https://buymeacoffee.com/aardaakpinar">Donate</a>
 				</li>
 				<li>
-					<a href="https://pitopi.onrender.com/" class="nav-cta">Launch App →</a>
+					<a href="https://pitopi.onrender.com/" class="nav-cta">Launch App <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
 				</li>
 			</ul>
 		</nav>
 
 		<!-- HERO -->
 		<section class="hero">
-			<div class="hero-grid"></div>
-			<div class="hero-glow"></div>
-			<div class="hero-glow2"></div>
-
 			<div class="hero-badge">
-				<span></span>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
 				Open source · Encrypted messaging
 			</div>
 
@@ -81,45 +78,45 @@
 		<!-- FEATURES -->
 		<section class="features-section">
 			<div class="section" style="padding-top: 0; padding-bottom: 0">
-				<div class="reveal">
-					<div class="section-tag">// Why Pitopi</div>
-					<h2 class="section-title">Built different.<br />By design.</h2>
-					<p class="section-sub">Every decision we made was driven by one question: how do we get out of the way?</p>
+				<div>
+					<div class="section-tag">Why Pitopi</div>
+					<h2 class="section-title">Built for privacy.<br />By design.</h2>
+					<p class="section-sub">Every design decision follows one principle: stay out of the way of your conversations.</p>
 				</div>
 
-				<div class="features-grid reveal">
+				<div class="features-grid">
 					<div class="feature-card">
-						<div class="feature-icon">🔒</div>
+						<div class="feature-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div>
 						<div class="feature-title">End-to-End Encrypted</div>
 						<div class="feature-desc">Messages are encrypted in the browser before they are relayed. The server handles transport, not plaintext chat content.</div>
 					</div>
 
 					<div class="feature-card">
-						<div class="feature-icon">⚡</div>
+						<div class="feature-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg></div>
 						<div class="feature-title">Real-Time Direct Chat</div>
 						<div class="feature-desc">Socket.IO relays encrypted messages between users in real time. Plaintext is not sent through the server.</div>
 					</div>
 
 					<div class="feature-card">
-						<div class="feature-icon">🗝️</div>
+						<div class="feature-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/></svg></div>
 						<div class="feature-title">Key-Based Auth</div>
 						<div class="feature-desc">No passwords, no emails, no phone numbers. A cryptographic key file is your identity, and if you lose it we can't recover it for you.</div>
 					</div>
 
 					<div class="feature-card">
-						<div class="feature-icon">📡</div>
+						<div class="feature-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 010 8.4M7.8 16.2a6 6 0 010-8.4M19 5a10 10 0 010 14M5 19A10 10 0 015 5"/></svg></div>
 						<div class="feature-title">Story Sharing</div>
 						<div class="feature-desc">Share moments that are cleaned up after 12 hours. Stories are stored temporarily and then removed by cleanup jobs.</div>
 					</div>
 
 					<div class="feature-card">
-						<div class="feature-icon">🚫</div>
+						<div class="feature-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></div>
 						<div class="feature-title">No Ads. Ever.</div>
 						<div class="feature-desc">The current landing experience does not include ads. Privacy is the focus of the product.</div>
 					</div>
 
 					<div class="feature-card">
-						<div class="feature-icon">🌐</div>
+						<div class="feature-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 4-6 3-12 7"/></svg></div>
 						<div class="feature-title">Open Source</div>
 						<div class="feature-desc">The source code is available in the repository. Audit it, fork it, and improve it.</div>
 					</div>
@@ -131,25 +128,25 @@
 		<section class="how-section">
 			<div class="how-inner">
 				<div>
-					<div class="section-tag reveal">// How it works</div>
-					<h2 class="section-title reveal">Three steps.<br />That's it.</h2>
+					<div class="section-tag">How it works</div>
+					<h2 class="section-title">Three steps<br />to get started.</h2>
 
 					<div class="steps">
-						<div class="step reveal">
+						<div class="step">
 							<div class="step-num">01</div>
 							<div class="step-content">
 								<h4>Download your key</h4>
 								<p>Generate a unique cryptographic key file. This 96-byte file is your entire identity. No sign-up form needed.</p>
 							</div>
 						</div>
-						<div class="step reveal">
+						<div class="step">
 							<div class="step-num">02</div>
 							<div class="step-content">
 								<h4>Connect to the network</h4>
 								<p>Upload your key to sign in. You appear in the user list and can see who else is online right now.</p>
 							</div>
 						</div>
-						<div class="step reveal">
+						<div class="step">
 							<div class="step-num">03</div>
 							<div class="step-content">
 								<h4>Start a private session</h4>
@@ -159,14 +156,11 @@
 					</div>
 				</div>
 
-				<div class="terminal reveal">
+				<div class="terminal">
 					<div class="terminal-bar">
-						<div class="dot dot-r"></div>
-						<div class="dot dot-y"></div>
-						<div class="dot dot-g"></div>
 						<div class="terminal-title">pitopi</div>
 					</div>
-					<img class="terminal-body" src="assets/ss.png" />
+					<img class="terminal-body" src="assets/ss.png" alt="Pitopi application screenshot" />
 				</div>
 			</div>
 		</section>
@@ -174,10 +168,10 @@
 		<!-- CTA -->
 		<section class="cta-section">
 			<div class="cta-glow"></div>
-			<div class="reveal">
+			<div>
 				<h2>Start a private<br />conversation.</h2>
 				<p>No account. No email. No phone number. Just download a key and you're in.</p>
-				<a href="https://pitopi.onrender.com/" class="btn-primary" style="font-size: 1rem; padding: 16px 36px"> Open Pitopi → </a>
+				<a href="https://pitopi.onrender.com/" class="btn-primary" style="font-size: 1rem; padding: 16px 36px"> Open Pitopi <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg> </a>
 			</div>
 		</section>
 
@@ -191,22 +185,6 @@
 			<div class="footer-copy">© 2026 Pitopi.</div>
 		</footer>
 
-		<script>
-			const reveals = document.querySelectorAll(".reveal");
-			const observer = new IntersectionObserver(
-				(entries) => {
-					entries.forEach((e, i) => {
-						if (e.isIntersecting) {
-							setTimeout(() => e.target.classList.add("visible"), i * 60);
-							observer.unobserve(e.target);
-						}
-					});
-				},
-				{ threshold: 0.1 },
-			);
-
-			reveals.forEach((el) => observer.observe(el));
-		</script>
 		<script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
 	</body>
 </html>
