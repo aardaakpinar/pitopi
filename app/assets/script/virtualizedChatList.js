@@ -47,7 +47,7 @@ class VirtualizedChatList {
     this._items = [];
     this._clearRendered();
     this._phantom.style.height = "0";
-    this._listEl.innerHTML = "";
+    this._listEl.replaceChildren();
   }
 
   destroy() {
@@ -120,53 +120,61 @@ class VirtualizedChatList {
   }
 }
 
-function makeChatItem(user, { t, openChat, DEFAULT_PROFILE_PIC }) {
+// ---- DOM builders: every dynamic value goes through textContent / property
+// ---- assignment, never through HTML parsing.
+const ITEM_CLASS =
+  "flex items-center px-4 py-3 border-b border-gray-200 dark:border-gray-800 " +
+  "hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer chat-item";
+
+function buildAvatar(profilePic, alt) {
+  const wrap = document.createElement("div");
+  wrap.className =
+    "w-12 h-12 rounded-full flex items-center justify-center text-white font-medium shrink-0";
+  const img = document.createElement("img");
+  img.src = safeImageSrc(profilePic);
+  img.alt = alt || "";
+  img.className = "w-full h-full rounded-full object-cover";
+  img.loading = "lazy";
+  wrap.appendChild(img);
+  return wrap;
+}
+
+function buildTextBlock(title, subtitle) {
+  const block = document.createElement("div");
+  block.className = "ml-3 flex-1 min-w-0";
+  const titleEl = document.createElement("div");
+  titleEl.className = "font-medium truncate text-black dark:text-white";
+  titleEl.textContent = title;
+  block.appendChild(titleEl);
+  if (subtitle !== undefined) {
+    const sub = document.createElement("div");
+    sub.className = "text-sm text-gray-500 truncate";
+    sub.textContent = subtitle;
+    block.appendChild(sub);
+  }
+  return block;
+}
+
+function makeChatItem(user, { t, openChat }) {
   return {
     type: "chat",
     data: user,
 
     render() {
       const el = document.createElement("div");
-
-      el.className =
-        "flex items-center px-4 py-3 border-b border-gray-200 dark:border-gray-800 " +
-        "hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer chat-item";
-
+      el.className = ITEM_CLASS;
       el.dataset.userId = user.socketId;
-
-      const statusText = user.busy ? t("text-busy") : t("text-available");
-
-      el.innerHTML = `
-                <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-medium shrink-0">
-                    <img
-                        src="${user.profilePic || DEFAULT_PROFILE_PIC}"
-                        alt="${escapeHtml(user.username)}"
-                        class="w-full h-full rounded-full object-cover"
-                        loading="lazy"
-                    >
-                </div>
-
-                <div class="ml-3 flex-1 min-w-0">
-                    <div class="flex justify-between">
-                        <div class="font-medium truncate text-black dark:text-white">
-                            ${escapeHtml(user.username)}
-                        </div>
-                    </div>
-
-                    <div class="text-sm text-gray-500 truncate">
-                        ${escapeHtml(statusText)}
-                    </div>
-                </div>
-            `;
-
+      el.append(
+        buildAvatar(user.profilePic, user.username),
+        buildTextBlock(user.username, user.busy ? t("text-busy") : t("text-available")),
+      );
       el.addEventListener("click", () => openChat(user));
-
       return el;
     },
   };
 }
 
-function makeStoryItem(storyData, { timeAgo, openStory, DEFAULT_PROFILE_PIC }) {
+function makeStoryItem(storyData, { timeAgo, openStory }) {
   const { user, stories } = storyData;
   const latestStory = stories[stories.length - 1];
 
@@ -176,39 +184,18 @@ function makeStoryItem(storyData, { timeAgo, openStory, DEFAULT_PROFILE_PIC }) {
 
     render() {
       const el = document.createElement("div");
-
-      el.className =
-        "flex items-center px-4 py-3 border-b border-gray-200 dark:border-gray-800 " +
-        "hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer chat-item";
-
-      el.innerHTML = `
-                <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-medium shrink-0">
-                    <img
-                        src="${user.profilePic || DEFAULT_PROFILE_PIC}"
-                        alt="${escapeHtml(user.username)}"
-                        class="w-full h-full rounded-full object-cover"
-                        loading="lazy"
-                    >
-                </div>
-
-                <div class="ml-3 flex-1 min-w-0">
-                    <div class="font-medium truncate text-black dark:text-white">
-                        ${escapeHtml(user.username)}
-                    </div>
-
-                    <div class="text-sm text-gray-500 truncate">
-                        ${timeAgo(latestStory.createdAt)}
-                    </div>
-                </div>
-            `;
-
+      el.className = ITEM_CLASS;
+      el.append(
+        buildAvatar(user.profilePic, user.username),
+        buildTextBlock(user.username, timeAgo(latestStory.createdAt)),
+      );
       el.addEventListener("click", () => openStory(user));
-
       return el;
     },
   };
 }
 
+// setting: { label, onClick, iconClass?: "fa-copy", iconSrc?: "https://..." }
 function makeSettingItem(setting) {
   return {
     type: "setting",
@@ -216,25 +203,24 @@ function makeSettingItem(setting) {
 
     render() {
       const el = document.createElement("div");
+      el.className = ITEM_CLASS;
 
-      el.className =
-        "flex items-center px-4 py-3 border-b border-gray-200 dark:border-gray-800 " +
-        "hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer chat-item";
+      const iconWrap = document.createElement("div");
+      iconWrap.className =
+        "w-10 h-10 rounded-full bg-accent text-white flex items-center justify-center text-lg shrink-0";
+      if (setting.iconClass) {
+        const icon = document.createElement("i");
+        icon.className = `fas ${setting.iconClass}`;
+        iconWrap.appendChild(icon);
+      } else if (setting.iconSrc) {
+        const img = document.createElement("img");
+        img.src = setting.iconSrc;
+        img.alt = "";
+        iconWrap.appendChild(img);
+      }
 
-      el.innerHTML = `
-                <div class="w-10 h-10 rounded-full bg-accent text-white flex items-center justify-center text-lg shrink-0">
-                    ${setting.icon}
-                </div>
-
-                <div class="ml-3 flex-1 min-w-0">
-                    <div class="font-medium truncate text-black dark:text-white">
-                        ${setting.label}
-                    </div>
-                </div>
-            `;
-
-      el.onclick = setting.onClick;
-
+      el.append(iconWrap, buildTextBlock(setting.label));
+      el.addEventListener("click", setting.onClick);
       return el;
     },
   };
@@ -298,11 +284,7 @@ function renderChatsList() {
 
   window._vcl.setItems(
     visibleUsers.map((u) =>
-      makeChatItem(u, {
-        t,
-        openChat,
-        DEFAULT_PROFILE_PIC,
-      }),
+      makeChatItem(u, { t, openChat }),
     ),
   );
 }
@@ -328,11 +310,7 @@ function renderStoriesList() {
 
   window._vcl.setItems(
     storyEntries.map((sd) =>
-      makeStoryItem(sd, {
-        timeAgo,
-        openStory,
-        DEFAULT_PROFILE_PIC,
-      }),
+      makeStoryItem(sd, { timeAgo, openStory }),
     ),
   );
 }
@@ -342,7 +320,7 @@ function renderSettingsList() {
 
   const settings = [
     {
-      icon: `<i class="fas fa-copy"></i>`,
+      iconClass: "fa-copy",
       label: t("copy_id"),
       onClick: () => {
         navigator.clipboard.writeText(state.myId);
@@ -351,13 +329,13 @@ function renderSettingsList() {
     },
 
     {
-      icon: `<i class="fas fa-camera"></i>`,
+      iconClass: "fa-camera",
       label: t("upload_photo"),
       onClick: () => document.getElementById("uploadAvatarInput")?.click(),
     },
 
     {
-      icon: `<i class="fas fa-user-secret"></i>`,
+      iconClass: "fa-user-secret",
       label: state.hiddenFromSearch
         ? t("hidden_from_search")
         : t("visible_in_search"),
@@ -366,13 +344,13 @@ function renderSettingsList() {
     },
 
     {
-      icon: `<i class="fas fa-globe"></i>`,
+      iconClass: "fa-globe",
       label: t("select_language"),
       onClick: () => changeLanguage(),
     },
 
     {
-      icon: `<i class="fas fa-sign-out-alt"></i>`,
+      iconClass: "fa-sign-out-alt",
       label: t("log_out"),
       onClick: () => logoutUser(),
     },
@@ -385,18 +363,14 @@ function renderChatSearchResults(users) {
   if (!window._vcl) return;
 
   if (!users.length) {
-    window._vcl.setItems([makeEmptyItem("No matching users found.")]);
+    window._vcl.setItems([makeEmptyItem(t("no_matching_users"))]);
 
     return;
   }
 
   window._vcl.setItems(
     users.map((u) =>
-      makeChatItem(u, {
-        t,
-        openChat,
-        DEFAULT_PROFILE_PIC,
-      }),
+      makeChatItem(u, { t, openChat }),
     ),
   );
 }
@@ -405,18 +379,14 @@ function renderStorySearchResults(stories) {
   if (!window._vcl) return;
 
   if (!stories.length) {
-    window._vcl.setItems([makeEmptyItem("No matching stories found.")]);
+    window._vcl.setItems([makeEmptyItem(t("no_matching_stories"))]);
 
     return;
   }
 
   window._vcl.setItems(
     stories.map((sd) =>
-      makeStoryItem(sd, {
-        timeAgo,
-        openStory,
-        DEFAULT_PROFILE_PIC,
-      }),
+      makeStoryItem(sd, { timeAgo, openStory }),
     ),
   );
 }
@@ -425,7 +395,7 @@ function renderSettingsSearchResults(filteredSettings) {
   if (!window._vcl) return;
 
   if (!filteredSettings.length) {
-    window._vcl.setItems([makeEmptyItem("No matching settings found.")]);
+    window._vcl.setItems([makeEmptyItem(t("no_matching_settings"))]);
 
     return;
   }
@@ -433,54 +403,24 @@ function renderSettingsSearchResults(filteredSettings) {
   window._vcl.setItems(filteredSettings.map((s) => makeSettingItem(s)));
 }
 
+const LANGUAGE_ICONS = {
+  az: "https://img.icons8.com/?size=96&id=pHfpq4E7vg9Y&format=png",
+  tr: "https://img.icons8.com/?size=64&id=J6RJcdGoJomQ&format=png",
+  en: "https://img.icons8.com/?size=96&id=fIgZUHgwc76e&format=png",
+  ru: "https://img.icons8.com/?size=96&id=vioRCshpCBKv&format=png",
+};
+
 function changeLanguage() {
   if (!window._vcl) return;
 
-  const langs = [
-    {
-      icon: `<img src="https://img.icons8.com/?size=96&id=pHfpq4E7vg9Y&format=png">`,
-      label: "Azərbaycan dili",
-
-      onClick: () => {
-        localStorage.setItem(STORAGE_KEYS.LANG, "az");
-        currentLang = "az";
-        translatePage();
-      },
+  const langs = availableLanguages().map(({ code, name }) => ({
+    iconSrc: LANGUAGE_ICONS[code],
+    label: name,
+    onClick: () => {
+      setLanguage(code);
+      changeLanguage();
     },
-
-    {
-      icon: `<img src="https://img.icons8.com/?size=64&id=J6RJcdGoJomQ&format=png">`,
-      label: "Türkçe",
-
-      onClick: () => {
-        localStorage.setItem(STORAGE_KEYS.LANG, "tr");
-        currentLang = "tr";
-        translatePage();
-      },
-    },
-
-    {
-      icon: `<img src="https://img.icons8.com/?size=96&id=fIgZUHgwc76e&format=png">`,
-      label: "English",
-
-      onClick: () => {
-        localStorage.setItem(STORAGE_KEYS.LANG, "en");
-        currentLang = "en";
-        translatePage();
-      },
-    },
-
-    {
-      icon: `<img src="https://img.icons8.com/?size=96&id=vioRCshpCBKv&format=png">`,
-      label: "Русский",
-
-      onClick: () => {
-        localStorage.setItem(STORAGE_KEYS.LANG, "ru");
-        currentLang = "ru";
-        translatePage();
-      },
-    },
-  ];
+  }));
 
   window._vcl.setItems(langs.map((s) => makeSettingItem(s)));
 }

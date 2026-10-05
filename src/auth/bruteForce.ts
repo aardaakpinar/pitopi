@@ -70,7 +70,7 @@ export function recordFailedAttempt(ip: string, type: string): void {
   if (record.attempts >= BRUTE_FORCE_CONFIG.maxAttempts) {
     record.bannedUntil = now + BRUTE_FORCE_CONFIG.banDurationMs;
     console.warn(
-      `🚫 Brute force ban: ${ip} (${type}) — ${BRUTE_FORCE_CONFIG.banDurationMs / 60000} dakika`,
+      `Brute force ban: ${ip} (${type}) — ${BRUTE_FORCE_CONFIG.banDurationMs / 60000} minutes`,
     );
     logToFirebase("BRUTE_FORCE_BAN", { ip, type, attempts: record.attempts });
   }

@@ -1,12 +1,17 @@
-const CACHE_NAME = "pitopi-v2";
+const CACHE_NAME = "pitopi-v6";
 const urlsToCache = [
   "/",
   "/index.html",
   "/login.html",
   "/manifest.json",
+  "/assets/style/tailwind.css",
   "/assets/style/style.css",
   "/assets/style/login.css",
   "/assets/img/boringavatar.svg",
+  "/assets/script/i18n.js",
+  "/assets/script/login.js",
+  "/assets/script/theme.js",
+  "/assets/config/translations.json",
 ];
 
 self.addEventListener("install", (event) => {
@@ -38,7 +43,20 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  if (url.pathname.startsWith("/")) {
+  // Only handle same-origin GETs. Auth endpoints and the Socket.IO transport
+  // must never be cached or replayed from the cache.
+  if (
+    event.request.method !== "GET" ||
+    url.origin !== self.location.origin ||
+    url.pathname.startsWith("/socket.io/") ||
+    url.pathname === "/login" ||
+    url.pathname === "/signup" ||
+    url.pathname === "/logout"
+  ) {
+    return;
+  }
+
+  {
     if (
       url.pathname.endsWith(".js") ||
       url.pathname.endsWith(".html") ||

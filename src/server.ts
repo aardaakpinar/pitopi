@@ -1,51 +1,93 @@
-import express from "express";
-import http from "http";
-import { Server } from "socket.io";
-import path from "path";
-import { fileURLToPath } from "url";
+import http from "node:http";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { startScheduler } from "./application/scheduler.js";
+import { CLEANUP_INTERVAL, ERROR_CODES, PENDING_SWEEP_INTERVAL } from "./config/constants.js";
+import { loadEnv } from "./config/env.js";
+import { initFirebase } from "./config/firebase.js";
+import { buildContainer } from "./container.js";
+import { createApp } from "./presentation/http/createApp.js";
+import { createSocketServer } from "./presentation/socket/createSocketServer.js";
+import { consoleLogger as logger } from "./shared/logger.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Import modules
-import { PORT } from "./config/constants.js";
-import "./config/firebase.js";
-import { setupAuthRoutes } from "./auth/routes.js";
-import { setupSocketEvents, setupCleanup } from "./socket/events.js";
+// ==================== COMPOSITION ====================
+const env = loadEnv();
+const firebase = initFirebase(env);
+const c = buildContainer(env, firebase);
 
-// ==================== INITIALIZATION ====================
-const app = express();
+const app = createApp({
+  env,
+  logger,
+  staticDir: path.join(__dirname, "..", "app"),
+  auth: { auth: c.auth, audit: c.audit, limiter: c.httpLimiter, bruteForce: c.bruteForce },
+});
+
 const server = http.createServer(app);
-const io = new Server(server, {
-	cors: { origin: "*" },
-	maxHttpBufferSize: 50e6,
+const { io, broadcaster } = createSocketServer(server, {
+  env,
+  logger,
+  presence: c.presence,
+  stories: c.stories,
+  sessions: c.sessions,
+  users: c.users,
+  audit: c.audit,
+  pseudonymizer: c.pseudonymizer,
+  bruteForce: c.bruteForce,
 });
 
-// ==================== STATIC FILES ====================
-app.use(express.static(path.join(__dirname, "..", "app")));
+// ==================== BACKGROUND JOBS ====================
+const stopScheduler = startScheduler(
+  [
+    {
+      name: "expire-pending-calls",
+      intervalMs: PENDING_SWEEP_INTERVAL,
+      run: () => {
+        const expired = c.presence.expirePending();
+        for (const call of expired) io.to(call.callerId).emit("call-rejected", { reason: ERROR_CODES.UNAVAILABLE });
+        if (expired.length) broadcaster.presenceChanged();
+      },
+    },
+    {
+      name: "housekeeping",
+      intervalMs: CLEANUP_INTERVAL,
+      run: async () => {
+        if (c.stories.purgeExpired()) broadcaster.storiesChanged();
+        c.httpLimiter.purge();
+        c.bruteForce.purge();
+        await c.sessions.purgeExpired();
+        await c.tokenCleanup.run();
+      },
+    },
+  ],
+  (name, err) => logger.error(`Scheduled task failed: ${name}`, err),
+);
 
-// ==================== ROUTES ====================
-app.get("/", (_, res) => res.sendFile(path.join(__dirname, "..", "app", "index.html")));
+// ==================== PROCESS SAFETY ====================
+process.on("unhandledRejection", (reason) => logger.error("Unhandled rejection", reason));
+process.on("uncaughtException", (err) => {
+  logger.error("Uncaught exception, shutting down", err);
+  process.exit(1);
+});
 
-// Setup authentication routes
-setupAuthRoutes(app);
+function shutdown(signal: string): void {
+  logger.info(`${signal} received, shutting down`);
+  stopScheduler();
+  broadcaster.stop();
+  void io.close(() => server.close(() => process.exit(0)));
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 
-// Setup socket events
-setupSocketEvents(io);
-
-// Setup cleanup routines
-setupCleanup(io);
-
-// ==================== START SERVER ====================
+// ==================== START ====================
 server.on("error", (error: NodeJS.ErrnoException) => {
-	if (error.code === "EADDRINUSE") {
-		console.error(`Port ${PORT} is already in use. Stop the existing server or run with PORT=3001.`);
-		process.exit(1);
-	}
-
-	throw error;
+  if (error.code === "EADDRINUSE") {
+    logger.error(`Port ${env.port} is already in use. Stop the other process or set PORT.`);
+    process.exit(1);
+  }
+  throw error;
 });
 
-server.listen(PORT, () => {
-	console.log(`✨ Pitopi server running at http://localhost:${PORT}`);
-});
+server.listen(env.port, () => logger.info(`Pitopi server listening on port ${env.port}`));

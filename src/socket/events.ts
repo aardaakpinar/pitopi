@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import {
+import { ERROR_CODES,
   RESERVED_NAMES,
   AUTHORIZED_IPS,
   STALE_CONNECTION_TIMEOUT,
@@ -44,31 +44,28 @@ export function setupSocketEvents(io: Server) {
     // uid: Firebase kalıcı hash — auth sonrası set edilir
     let uid: string | null = null;
 
-    console.log(`⚡ [${timestamp}] New connection: ${socket.id} (IP: ${ip})`);
+    console.log(`[${timestamp}] New connection: ${socket.id} (IP: ${ip})`);
 
     // -------- AUTHENTICATION
     socket.on("auth", async (userId: string) => {
       if (isBanned(ip, "auth")) {
         const remaining = getRemainingBanTime(ip, "auth");
-        socket.emit("auth_failed", `${remaining} dakika sonra tekrar dene.`);
+        socket.emit("auth_failed", {
+          code: ERROR_CODES.RATE_LIMITED,
+          params: { minutes: remaining },
+        });
         socket.disconnect();
         return;
       }
 
-      if (isBanned(ip, "auth")) {
-        // Note: This seems duplicated, but keeping as is
-        socket.emit("auth_failed", "Çok fazla istek.");
-        socket.disconnect();
-        return;
-      }
 
-      console.log(`🔑 [${timestamp}] Auth request: ${userId}`);
+      console.log(`[${timestamp}] Auth request: ${userId}`);
 
       try {
         if (!userId || userId.length < 8) {
           recordFailedAttempt(ip, "auth");
-          console.error(`❌ [${timestamp}] Invalid userId format: ${userId}`);
-          socket.emit("auth_failed", "Invalid user ID format");
+          console.error(`[${timestamp}] Invalid userId format: ${userId}`);
+          socket.emit("auth_failed", { code: ERROR_CODES.INVALID_USER_ID });
           await logToFirebase("AUTH_FAILED", {
             reason: "invalid_user_id",
             userId,
@@ -81,8 +78,8 @@ export function setupSocketEvents(io: Server) {
         const userDoc = await dbf.collection("users").doc(userId).get();
         if (!userDoc.exists) {
           recordFailedAttempt(ip, "auth");
-          console.log(`❌ [${timestamp}] User not found: ${userId}`);
-          socket.emit("auth_failed", "User not found");
+          console.log(`[${timestamp}] User not found: ${userId}`);
+          socket.emit("auth_failed", { code: ERROR_CODES.USER_NOT_FOUND });
           await logToFirebase("AUTH_FAILED", {
             reason: "user_not_found",
             userId,
@@ -100,7 +97,7 @@ export function setupSocketEvents(io: Server) {
           const ipKey = ip.split(",")[0].trim();
           if (!AUTHORIZED_IPS.has(ipKey)) {
             console.log(
-              `⛔ [${timestamp}] Reserved name attempt: ${username} from ${ipKey}`,
+              `[${timestamp}] Reserved name attempt: ${username} from ${ipKey}`,
             );
             await logToFirebase("AUTH_FAILED", {
               reason: "reserved_name",
@@ -109,7 +106,7 @@ export function setupSocketEvents(io: Server) {
               ip,
               socketId: socket.id,
             });
-            socket.emit("nickname-restricted", "This username is reserved");
+            socket.emit("nickname-restricted");
             socket.disconnect();
             return;
           }
@@ -120,8 +117,8 @@ export function setupSocketEvents(io: Server) {
         );
         if (usernameTaken) {
           recordFailedAttempt(ip, "auth");
-          console.log(`🚫 [${timestamp}] Username taken: ${username}`);
-          socket.emit("nickname-taken", "Username already in use");
+          console.log(`[${timestamp}] Username taken: ${username}`);
+          socket.emit("nickname-taken");
           await logToFirebase("AUTH_FAILED", {
             reason: "username_taken",
             userId,
@@ -155,7 +152,7 @@ export function setupSocketEvents(io: Server) {
         });
 
         console.log(
-          `🔐 [${timestamp}] Auth successful: ${username} (${persistentUserId})`,
+          `[${timestamp}] Auth successful: ${username} (${persistentUserId})`,
         );
 
         await logToFirebase("AUTH_OK", {
@@ -180,12 +177,8 @@ export function setupSocketEvents(io: Server) {
           getAllActiveStories(stories, persistentUsers, users),
         );
       } catch (err) {
-        console.error(`❗ [${timestamp}] Auth error:`, err);
-        socket.emit(
-          "auth_failed",
-          "Authentication error: " +
-            (err instanceof Error ? err.message : String(err)),
-        );
+        console.error(`[${timestamp}] Auth error:`, err);
+        socket.emit("auth_failed", { code: ERROR_CODES.AUTH_ERROR });
       }
     });
 
@@ -208,14 +201,14 @@ export function setupSocketEvents(io: Server) {
 
     // -------- SOCKET CHAT HANDSHAKE
     socket.on("call-user", ({ targetId, cryptoPublicKey }) => {
-      console.log(`📞 [${timestamp}] Call from ${socket.id} to ${targetId}`);
+      console.log(`[${timestamp}] Call from ${socket.id} to ${targetId}`);
 
       if (
         isUserConnected(socket.id, activeConnections) ||
         isUserConnected(targetId, activeConnections)
       ) {
-        socket.emit("call-rejected", { reason: "User is busy" });
-        console.log(`❌ [${timestamp}] Call rejected: user busy`);
+        socket.emit("call-rejected", { reason: ERROR_CODES.BUSY });
+        console.log(`[${timestamp}] Call rejected: user busy`);
         return;
       }
 
@@ -230,7 +223,7 @@ export function setupSocketEvents(io: Server) {
 
     socket.on("call-rejected", ({ targetId, reason }) => {
       console.log(
-        `❌ [${timestamp}] Call rejected from ${socket.id} to ${targetId}: ${reason}`,
+        `[${timestamp}] Call rejected from ${socket.id} to ${targetId}: ${reason}`,
       );
 
       const targetUser = users.get(targetId);
@@ -241,7 +234,7 @@ export function setupSocketEvents(io: Server) {
 
     socket.on("send-answer", ({ targetId, cryptoPublicKey }) => {
       console.log(
-        `✅ [${timestamp}] Call answered: ${socket.id} -> ${targetId}`,
+        `[${timestamp}] Call answered: ${socket.id} -> ${targetId}`,
       );
 
       trackConnection(socket.id, targetId, activeConnections, users, io);
@@ -264,7 +257,7 @@ export function setupSocketEvents(io: Server) {
 
     socket.on("connection-ended", ({ targetId }) => {
       console.log(
-        `🛑 [${timestamp}] Connection ended: ${socket.id} -> ${targetId}`,
+        `[${timestamp}] Connection ended: ${socket.id} -> ${targetId}`,
       );
 
       removeConnection(socket.id, targetId, activeConnections, users, io);
@@ -284,7 +277,7 @@ export function setupSocketEvents(io: Server) {
       const user = users.get(socket.id);
       if (!user) return;
 
-      console.log(`📸 [${timestamp}] Story uploaded by ${user.username}`);
+      console.log(`[${timestamp}] Story uploaded by ${user.username}`);
       await logToFirebase("STORY_UPLOADED", {
         ...resolveLogContext(socket.id, users, uid),
         type,
@@ -334,7 +327,7 @@ export function setupSocketEvents(io: Server) {
       }
 
       story.viewers.add(uid!);
-      console.log(`👁️ [${timestamp}] Story ${storyId} viewed by ${uid}`);
+      console.log(`[${timestamp}] Story ${storyId} viewed by ${uid}`);
       await logToFirebase("STORY_VIEWED", {
         storyId,
         persistentUserId, // hikaye sahibi
@@ -354,7 +347,7 @@ export function setupSocketEvents(io: Server) {
       if (updatedStories.length !== userStories.length) {
         stories.set(user.persistentUserId, updatedStories);
         console.log(
-          `🗑️ [${timestamp}] Story ${storyId} deleted by ${user.username}`,
+          `[${timestamp}] Story ${storyId} deleted by ${user.username}`,
         );
         await logToFirebase("STORY_DELETED", {
           storyId,
@@ -375,7 +368,7 @@ export function setupSocketEvents(io: Server) {
       if (!user) return;
 
       console.log(
-        `🖼️ [${timestamp}] Profile picture updated by ${user.username}`,
+        `[${timestamp}] Profile picture updated by ${user.username}`,
       );
 
       try {
@@ -388,7 +381,7 @@ export function setupSocketEvents(io: Server) {
 
         broadcastOnlineUsers(activeConnections, users, io);
       } catch (err) {
-        console.error("❗ Profile picture update error:", err);
+        console.error("Profile picture update error:", err);
       }
     });
 
@@ -416,7 +409,7 @@ export function setupSocketEvents(io: Server) {
       const logCtx = resolveLogContext(socket.id, users, uid);
       users.delete(socket.id);
 
-      console.log(`❌ [${timestamp}] Disconnected: ${socket.id}`);
+      console.log(`[${timestamp}] Disconnected: ${socket.id}`);
 
       if (connectedPartner) {
         removeConnection(
