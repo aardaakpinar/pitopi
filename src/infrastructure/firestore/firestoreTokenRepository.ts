@@ -1,12 +1,12 @@
-import type admin from "firebase-admin";
+import type { CollectionReference, Firestore } from "firebase-admin/firestore";
 import type { TokenRecord, TokenRepository } from "../../application/ports.js";
 
 const ALREADY_EXISTS = 6; // gRPC status code
 
 export class FirestoreTokenRepository implements TokenRepository {
-  private readonly col: admin.firestore.CollectionReference;
+  private readonly col: CollectionReference;
 
-  constructor(db: admin.firestore.Firestore) {
+  constructor(db: Firestore) {
     this.col = db.collection("tokens");
   }
 

@@ -1,10 +1,10 @@
-import type admin from "firebase-admin";
+import type { CollectionReference, DocumentData, Firestore } from "firebase-admin/firestore";
 import type { UserRepository } from "../../application/ports.js";
 import type { UserRecord } from "../../domain/types.js";
 
 const ALREADY_EXISTS = 6;
 
-function toRecord(id: string, data: admin.firestore.DocumentData): UserRecord {
+function toRecord(id: string, data: DocumentData): UserRecord {
   return {
     id,
     username: typeof data.username === "string" ? data.username : `user_${id.slice(0, 8)}`,
@@ -15,9 +15,9 @@ function toRecord(id: string, data: admin.firestore.DocumentData): UserRecord {
 }
 
 export class FirestoreUserRepository implements UserRepository {
-  private readonly col: admin.firestore.CollectionReference;
+  private readonly col: CollectionReference;
 
-  constructor(db: admin.firestore.Firestore) {
+  constructor(db: Firestore) {
     this.col = db.collection("users");
   }
 

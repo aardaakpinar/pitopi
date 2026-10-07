@@ -1,14 +1,16 @@
-import admin from "firebase-admin";
+import { cert, initializeApp, type ServiceAccount } from "firebase-admin/app";
+import { getDatabase, type Database } from "firebase-admin/database";
+import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import fs from "node:fs";
 import path from "node:path";
 import type { AppEnv } from "./env.js";
 
 export interface FirebaseHandles {
-  firestore: admin.firestore.Firestore;
-  rtdb: admin.database.Database;
+  firestore: Firestore;
+  rtdb: Database;
 }
 
-function loadServiceAccount(): admin.ServiceAccount {
+function loadServiceAccount(): ServiceAccount {
   const inline = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (inline) return JSON.parse(inline);
 
@@ -28,9 +30,9 @@ function loadServiceAccount(): admin.ServiceAccount {
 
 /** Explicit initialisation: importing this module has no side effects. */
 export function initFirebase(env: AppEnv): FirebaseHandles {
-  admin.initializeApp({
-    credential: admin.credential.cert(loadServiceAccount()),
+  const app = initializeApp({
+    credential: cert(loadServiceAccount()),
     databaseURL: env.firebaseDatabaseUrl,
   });
-  return { firestore: admin.firestore(), rtdb: admin.database() };
+  return { firestore: getFirestore(app), rtdb: getDatabase(app) };
 }

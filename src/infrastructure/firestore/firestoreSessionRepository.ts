@@ -1,11 +1,11 @@
-import type admin from "firebase-admin";
+import type { CollectionReference, Firestore } from "firebase-admin/firestore";
 import type { SessionRepository } from "../../application/ports.js";
 import type { SessionRecord } from "../../domain/types.js";
 
 export class FirestoreSessionRepository implements SessionRepository {
-  private readonly col: admin.firestore.CollectionReference;
+  private readonly col: CollectionReference;
 
-  constructor(private readonly db: admin.firestore.Firestore) {
+  constructor(private readonly db: Firestore) {
     this.col = db.collection("sessions");
   }
 
