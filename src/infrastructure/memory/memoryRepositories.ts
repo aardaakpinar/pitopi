@@ -9,23 +9,21 @@ import type { AuditEntry, SessionRecord, UserRecord } from "../../domain/types.j
 
 /** In-memory adapters, used by the unit tests and handy for local experiments. */
 export class MemoryTokenRepository implements TokenRepository {
-  readonly items = new Map<string, { createdAt: number; claimed: boolean }>();
+  readonly items = new Map<string, { createdAt: number }>();
 
   async create(id: string, createdAt: number): Promise<boolean> {
     if (this.items.has(id)) return false;
-    this.items.set(id, { createdAt, claimed: false });
+    this.items.set(id, { createdAt });
     return true;
   }
-  async exists(id: string): Promise<boolean> {
-    return this.items.has(id);
-  }
-  async markClaimed(id: string): Promise<void> {
+  async find(id: string): Promise<TokenRecord | null> {
     const item = this.items.get(id);
-    if (item) item.claimed = true;
+    return item ? { id, createdAt: item.createdAt } : null;
   }
-  async listUnclaimed(limit: number): Promise<TokenRecord[]> {
+  async listCreatedBefore(cutoff: number, limit: number): Promise<TokenRecord[]> {
     return Array.from(this.items.entries())
-      .filter(([, v]) => !v.claimed)
+      .filter(([, v]) => v.createdAt <= cutoff)
+      .sort(([, a], [, b]) => a.createdAt - b.createdAt)
       .slice(0, limit)
       .map(([id, v]) => ({ id, createdAt: v.createdAt }));
   }
@@ -94,5 +92,21 @@ export class MemoryAuditLogRepository implements AuditLogRepository {
 
   async append(entry: AuditEntry): Promise<void> {
     this.entries.push(entry);
+  }
+
+  async purgeBefore(cutoff: number, maxDays: number): Promise<number> {
+    const days = new Set<string>();
+    const expired = new Set<AuditEntry>();
+    for (const entry of this.entries) {
+      if (entry.timestamp >= cutoff) continue;
+      const day = new Date(entry.timestamp).toISOString().slice(0, 10);
+      if (!days.has(day) && days.size >= maxDays) continue;
+      days.add(day);
+      expired.add(entry);
+    }
+    for (let i = this.entries.length - 1; i >= 0; i -= 1) {
+      if (expired.has(this.entries[i])) this.entries.splice(i, 1);
+    }
+    return days.size;
   }
 }

@@ -5,8 +5,11 @@ const HOUR = 60 * MINUTE;
 
 export const STORY_EXPIRY = 12 * HOUR;
 export const SESSION_TTL_MS = 7 * 24 * HOUR;
-export const UNCLAIMED_TOKEN_TTL_MS = 7 * 24 * HOUR;
+export const UNCLAIMED_TOKEN_TTL_MS = HOUR;
 export const CLEANUP_INTERVAL = HOUR;
+export const TOKEN_CLEANUP_INTERVAL = 5 * MINUTE;
+export const AUDIT_LOG_RETENTION_MS = 90 * 24 * HOUR;
+export const AUDIT_LOG_PURGE_BATCH_DAYS = 1_000;
 export const PENDING_CALL_TTL_MS = 2 * MINUTE;
 export const PENDING_SWEEP_INTERVAL = 30 * SECOND;
 export const AUTH_TIMEOUT_MS = 10 * SECOND;

@@ -9,12 +9,10 @@ export interface TokenRecord {
 }
 
 export interface TokenRepository {
-  /** Registers an unclaimed token. Returns false when the id already exists. */
+  /** Registers a key until its first login or expiration. */
   create(id: string, createdAt: number): Promise<boolean>;
-  exists(id: string): Promise<boolean>;
-  /** A token is claimed once someone has logged in with it. */
-  markClaimed(id: string): Promise<void>;
-  listUnclaimed(limit: number): Promise<TokenRecord[]>;
+  find(id: string): Promise<TokenRecord | null>;
+  listCreatedBefore(cutoff: number, limit: number): Promise<TokenRecord[]>;
   delete(id: string): Promise<void>;
 }
 
@@ -37,6 +35,8 @@ export interface SessionRepository {
 
 export interface AuditLogRepository {
   append(entry: AuditEntry): Promise<void>;
+  /** Removes complete daily partitions older than the cutoff, up to the limit. */
+  purgeBefore(cutoff: number, maxDays: number): Promise<number>;
 }
 
 export type Clock = () => number;

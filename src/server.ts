@@ -2,7 +2,7 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { startScheduler } from "./application/scheduler.js";
-import { CLEANUP_INTERVAL, ERROR_CODES, PENDING_SWEEP_INTERVAL } from "./config/constants.js";
+import { CLEANUP_INTERVAL, ERROR_CODES, PENDING_SWEEP_INTERVAL, TOKEN_CLEANUP_INTERVAL } from "./config/constants.js";
 import { loadEnv } from "./config/env.js";
 import { initFirebase } from "./config/firebase.js";
 import { buildContainer } from "./container.js";
@@ -38,8 +38,18 @@ const { io, broadcaster } = createSocketServer(server, {
 });
 
 // ==================== BACKGROUND JOBS ====================
+const runAuditRetention = () => c.audit.purgeExpired();
+void runAuditRetention().catch((err) => logger.error("Scheduled task failed: audit-log-retention", err));
+const runTokenCleanup = () => c.tokenCleanup.run();
+void runTokenCleanup().catch((err) => logger.error("Scheduled task failed: unclaimed-token-cleanup", err));
+
 const stopScheduler = startScheduler(
   [
+    {
+      name: "audit-log-retention",
+      intervalMs: CLEANUP_INTERVAL,
+      run: runAuditRetention,
+    },
     {
       name: "expire-pending-calls",
       intervalMs: PENDING_SWEEP_INTERVAL,
@@ -50,6 +60,11 @@ const stopScheduler = startScheduler(
       },
     },
     {
+      name: "unclaimed-token-cleanup",
+      intervalMs: TOKEN_CLEANUP_INTERVAL,
+      run: runTokenCleanup,
+    },
+    {
       name: "housekeeping",
       intervalMs: CLEANUP_INTERVAL,
       run: async () => {
@@ -57,7 +72,6 @@ const stopScheduler = startScheduler(
         c.httpLimiter.purge();
         c.bruteForce.purge();
         await c.sessions.purgeExpired();
-        await c.tokenCleanup.run();
       },
     },
   ],

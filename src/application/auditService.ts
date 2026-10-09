@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { LIMITS } from "../config/constants.js";
+import { AUDIT_LOG_PURGE_BATCH_DAYS, AUDIT_LOG_RETENTION_MS, LIMITS } from "../config/constants.js";
 import type { Pseudonymizer } from "./identity.js";
 import type { AuditLogRepository, Clock } from "./ports.js";
 
@@ -42,7 +42,10 @@ export class AuditService {
   ) {}
 
   log(event: AuditEvent, data: Record<string, unknown> = {}): void {
-    if (this.inflight >= LIMITS.maxAuditInflight) return;
+    if (this.inflight >= LIMITS.maxAuditInflight) {
+      console.error(`Audit log dropped: maximum in-flight writes reached (${event})`);
+      return;
+    }
 
     const prepared: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
@@ -56,6 +59,10 @@ export class AuditService {
       .finally(() => {
         this.inflight -= 1;
       });
+  }
+
+  purgeExpired(): Promise<number> {
+    return this.repo.purgeBefore(this.now() - AUDIT_LOG_RETENTION_MS, AUDIT_LOG_PURGE_BATCH_DAYS);
   }
 
   /** Unique, sortable key for the log tree (avoids same-millisecond clashes). */

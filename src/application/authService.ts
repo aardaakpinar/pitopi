@@ -45,17 +45,31 @@ export class AuthService {
     if (!parsed) return null;
 
     const accountId = await deriveAccountId(parsed.token, parsed.salt);
-    if (!(await this.tokens.exists(accountId))) return null;
+    const existingUser = await this.users.findById(accountId);
+    let user: UserRecord;
+    if (existingUser) {
+      user = existingUser;
+    } else {
+      const registration = await this.tokens.find(accountId);
+      if (!registration) return null;
+      if (this.now() - registration.createdAt >= UNCLAIMED_TOKEN_TTL_MS) {
+        await this.tokens.delete(accountId);
+        return null;
+      }
 
-    const { user, created } = await this.users.createIfAbsent({
-      id: accountId,
-      username: `user_${accountId.slice(0, 8)}`,
-      createdAt: this.now(),
-      profilePic: null,
-      hidden: false,
-    });
+      const result = await this.users.createIfAbsent({
+        id: accountId,
+        username: `user_${accountId.slice(0, 8)}`,
+        createdAt: this.now(),
+        profilePic: null,
+        hidden: false,
+      });
+      user = result.user;
+    }
 
-    if (created) await this.tokens.markClaimed(accountId);
+    // Registrations are only needed until the first successful login. The
+    // user record is sufficient to recognise accounts on later logins.
+    await this.tokens.delete(accountId);
 
     const sessionToken = await this.sessions.create(accountId, device);
     return { sessionToken, accountId, user: toPublicUser(user) };
@@ -68,26 +82,15 @@ export class AuthService {
 
 /**
  * Removes key registrations that were issued but never used to log in.
- * Claimed tokens are never touched, otherwise active users would silently
- * lose access after the retention window.
+ * Account records remain valid after their one-time registration is removed.
  */
 export class TokenCleanupService {
-  constructor(
-    private readonly tokens: TokenRepository,
-    private readonly users: UserRepository,
-    private readonly now: Clock = Date.now,
-  ) {}
+  constructor(private readonly tokens: TokenRepository, private readonly now: Clock = Date.now) {}
 
   async run(limit = 400): Promise<number> {
     const cutoff = this.now() - UNCLAIMED_TOKEN_TTL_MS;
     let removed = 0;
-    for (const { id, createdAt } of await this.tokens.listUnclaimed(limit)) {
-      if (createdAt >= cutoff) continue;
-      if (await this.users.exists(id)) {
-        // Login created the user but the claim flag was lost: repair it.
-        await this.tokens.markClaimed(id);
-        continue;
-      }
+    for (const { id } of await this.tokens.listCreatedBefore(cutoff, limit)) {
       await this.tokens.delete(id);
       removed += 1;
     }

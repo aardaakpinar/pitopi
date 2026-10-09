@@ -12,7 +12,7 @@ export class FirestoreTokenRepository implements TokenRepository {
 
   async create(id: string, createdAt: number): Promise<boolean> {
     try {
-      await this.col.doc(id).create({ createdAt, claimed: false });
+      await this.col.doc(id).create({ createdAt });
       return true;
     } catch (err) {
       if ((err as { code?: number }).code === ALREADY_EXISTS) return false;
@@ -20,17 +20,19 @@ export class FirestoreTokenRepository implements TokenRepository {
     }
   }
 
-  async exists(id: string): Promise<boolean> {
-    return (await this.col.doc(id).get()).exists;
+  async find(id: string): Promise<TokenRecord | null> {
+    const snap = await this.col.doc(id).get();
+    return snap.exists
+      ? { id, createdAt: Number(snap.get("createdAt")) || 0 }
+      : null;
   }
 
-  async markClaimed(id: string): Promise<void> {
-    await this.col.doc(id).set({ claimed: true }, { merge: true });
-  }
-
-  async listUnclaimed(limit: number): Promise<TokenRecord[]> {
-    // Single-field equality query: no composite index required.
-    const snap = await this.col.where("claimed", "==", false).limit(limit).get();
+  async listCreatedBefore(cutoff: number, limit: number): Promise<TokenRecord[]> {
+    const snap = await this.col
+      .where("createdAt", "<=", cutoff)
+      .orderBy("createdAt", "asc")
+      .limit(limit)
+      .get();
     return snap.docs.map((d) => ({ id: d.id, createdAt: Number(d.get("createdAt")) || 0 }));
   }
 
