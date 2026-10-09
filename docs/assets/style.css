@@ -4,16 +4,33 @@
 :root {
   --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --bg: #060608;
-  --surface: #0d0d12;
-  --surface2: #13131a;
-  --border: #1e1e2e;
-  --accent: #4f6ef7;
-  --accent2: #7c3aed;
-  --accent-glow: rgba(79, 110, 247, 0.12);
-  --text: #e8e8f0;
-  --muted: #6b6b80;
-  --subtle: #2a2a3a;
+  --bg: #09090b;
+  --surface: #111113;
+  --surface2: #19191c;
+  --surface-deep: #080810;
+  --border: #2a2a2e;
+  --accent: #e4e4e7;
+  --accent2: #a1a1aa;
+  --accent-glow: rgba(228, 228, 231, 0.09);
+  --accent-border-soft: rgba(228, 228, 231, 0.2);
+  --accent-border: rgba(228, 228, 231, 0.3);
+  --accent-border-strong: rgba(228, 228, 231, 0.4);
+  --accent-contrast: #09090b;
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  --subtle: #3f3f46;
+  --warning: #d4a017;
+  --warning-soft: rgba(245, 158, 11, 0.06);
+  --warning-border: rgba(245, 158, 11, 0.2);
+  --success: #22c55e;
+  --success-soft: rgba(34, 197, 94, 0.1);
+  --success-border: rgba(34, 197, 94, 0.2);
+  --danger: #ef4444;
+  --info-soft: rgba(228, 228, 231, 0.1);
+  --code-comment: #3d3d5c;
+  --code-keyword: #c792ea;
+  --code-string: #f59e0b;
+  --code-variable: #22c55e;
 }
 
 /* ==================== RESET ==================== */
@@ -91,11 +108,11 @@ nav {
   align-items: center;
   gap: 8px;
   background: var(--accent) !important;
-  color: white !important;
+  color: var(--accent-contrast) !important;
   font-weight: 500 !important;
 }
 .nav-cta:hover {
-  background: #3d5ce8 !important;
+  background: var(--subtle) !important;
 }
 
 /* ==================== PAGE HEADER (shared) ==================== */
@@ -136,7 +153,7 @@ nav {
   gap: 8px;
   padding: 14px 28px;
   background: var(--accent);
-  color: white;
+  color: var(--accent-contrast);
   border-radius: 6px;
   text-decoration: none;
   font-weight: 500;
@@ -145,7 +162,7 @@ nav {
   border: none;
 }
 .btn-primary:hover {
-  background: #3d5ce8;
+  background: var(--subtle);
 }
 .btn-secondary {
   display: inline-flex;
@@ -373,7 +390,7 @@ code {
   width: 44px;
   height: 44px;
   background: var(--accent-glow);
-  border: 1px solid rgba(79, 110, 247, 0.2);
+  border: 1px solid var(--accent-border-soft);
   color: var(--accent);
   border-radius: 8px;
   display: flex;
@@ -445,7 +462,7 @@ code {
 
 /* INDEX — TERMINAL */
 .terminal {
-  background: #080810;
+  background: var(--surface-deep);
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
@@ -619,13 +636,13 @@ code {
   transition: border-color 0.2s;
 }
 .guide-step:hover {
-  border-color: rgba(79, 110, 247, 0.3);
+  border-color: var(--accent-border);
 }
 .guide-num {
   width: 32px;
   height: 32px;
   background: var(--accent-glow);
-  border: 1px solid rgba(79, 110, 247, 0.3);
+  border: 1px solid var(--accent-border);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -649,8 +666,8 @@ code {
 
 /* HELP — INFO / WARNING BOXES */
 .warning-box {
-  background: rgba(245, 158, 11, 0.06);
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-border);
   border-radius: 8px;
   padding: 20px 24px;
   display: flex;
@@ -665,12 +682,12 @@ code {
 }
 .warning-box p {
   font-size: 0.86rem;
-  color: #d4a017;
+  color: var(--warning);
   line-height: 1.6;
 }
 .info-box {
   background: var(--accent-glow);
-  border: 1px solid rgba(79, 110, 247, 0.2);
+  border: 1px solid var(--accent-border-soft);
   border-radius: 8px;
   padding: 20px 24px;
   display: flex;
@@ -685,7 +702,7 @@ code {
 }
 .info-box p {
   font-size: 0.86rem;
-  color: #8ba4f9;
+  color: var(--accent2);
   line-height: 1.6;
 }
 
@@ -713,7 +730,7 @@ code {
   color: var(--text);
 }
 .stack-card:hover {
-  border-color: rgba(79, 110, 247, 0.4);
+  border-color: var(--accent-border-strong);
   transform: translateY(-2px);
   background: var(--surface2);
 }
@@ -737,7 +754,7 @@ code {
 
 /* DEV — CODE BLOCK */
 .code-block {
-  background: #080810;
+  background: var(--surface-deep);
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
@@ -777,25 +794,25 @@ code {
   overflow-x: auto;
 }
 .t-c {
-  color: #3d3d5c;
+  color: var(--code-comment);
 }
 .t-k {
-  color: #c792ea;
+  color: var(--code-keyword);
 }
 .t-f {
-  color: #4f6ef7;
+  color: var(--accent);
 }
 .t-s {
-  color: #f59e0b;
+  color: var(--code-string);
 }
 .t-v {
-  color: #22c55e;
+  color: var(--code-variable);
 }
 .t-n {
-  color: #e8e8f0;
+  color: var(--text);
 }
 .t-p {
-  color: #6b6b80;
+  color: var(--muted);
 }
 
 /* DEV — ARCHITECTURE */
@@ -827,10 +844,10 @@ code {
   color: var(--accent);
 }
 .arch-ok {
-  color: #22c55e;
+  color: var(--success);
 }
 .arch-no {
-  color: #ef4444;
+  color: var(--danger);
 }
 
 /* DEV — SOCKET EVENTS */
@@ -865,14 +882,14 @@ code {
   margin-bottom: 10px;
 }
 .dir-in {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: var(--success-soft);
+  color: var(--success);
+  border: 1px solid var(--success-border);
 }
 .dir-out {
-  background: rgba(79, 110, 247, 0.1);
-  color: #8ba4f9;
-  border: 1px solid rgba(79, 110, 247, 0.2);
+  background: var(--info-soft);
+  color: var(--accent2);
+  border: 1px solid var(--accent-border-soft);
 }
 .event-desc {
   font-size: 0.83rem;
@@ -991,7 +1008,7 @@ code {
   position: relative;
 }
 .donate-card:hover {
-  border-color: rgba(79, 110, 247, 0.4);
+  border-color: var(--accent-border-strong);
   transform: translateY(-3px);
   background: var(--surface2);
 }
@@ -1005,7 +1022,7 @@ code {
   left: 50%;
   transform: translateX(-50%);
   background: var(--accent);
-  color: white;
+  color: var(--accent-contrast);
   font-family: var(--mono);
   font-size: 0.65rem;
   text-transform: uppercase;
@@ -1075,7 +1092,7 @@ code {
   transition: all 0.2s;
 }
 .method-card:hover {
-  border-color: rgba(79, 110, 247, 0.4);
+  border-color: var(--accent-border-strong);
   background: var(--surface2);
   transform: translateY(-2px);
 }
