@@ -23,7 +23,6 @@
 	--danger-soft: rgba(220, 38, 38, 0.08);
 	--ok: #15803d;
 	--ok-soft: rgba(23, 166, 115, 0.14);
-	--read-status: #7ff0c3;
 
 	--story-background: #000000;
 	--story-text: #ffffff;
@@ -578,7 +577,7 @@ button:disabled {
 	font-size: 11px;
 }
 .pp-tick--read {
-	color: var(--read-status);
+	color: var(--ok);
 	opacity: 1;
 }
 .pp-quote {
@@ -737,12 +736,13 @@ button:disabled {
 	min-width: 0;
 	display: flex;
 	align-items: center;
-	gap: 2px;
+	gap: 10px;
 	height: 46px;
-	padding: 0 6px 0 16px;
+	padding: 0 16px 0 16px;
 	background: var(--panel);
 	border: 1px solid var(--line);
 	border-radius: 23px;
+	flex-direction: row;
 }
 .pp-composer-main:focus-within {
 	border-color: var(--accent);
