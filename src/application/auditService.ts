@@ -6,6 +6,7 @@ import type { AuditLogRepository, Clock } from "./ports.js";
 export type AuditEvent =
   | "LOGIN" | "LOGOUT" | "SIGNUP" | "AUTH_OK" | "AUTH_FAILED" | "DISCONNECT"
   | "CALL_CONNECTED" | "CALL_ENDED" | "STORY_UPLOADED" | "STORY_VIEWED" | "STORY_DELETED"
+  | "SESSION_REVOKED" | "SESSIONS_REVOKED_OTHERS"
   | "RATE_LIMITED" | "BRUTE_FORCE_BAN";
 
 function sanitizeValue(value: unknown, depth = 0): unknown {
