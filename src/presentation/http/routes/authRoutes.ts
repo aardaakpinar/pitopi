@@ -5,6 +5,7 @@ import type { AuthService } from "../../../application/authService.js";
 import type { BruteForceGuard, FixedWindowLimiter } from "../../../application/rateLimiter.js";
 import { ERROR_CODES, LIMITS, RATE_LIMIT_CONFIG, SESSION_TOKEN_REGEX } from "../../../config/constants.js";
 import { resolveClientIp } from "../../../shared/clientIp.js";
+import { deviceLabel } from "../../../shared/device.js";
 import { noStore, requireTrustedOrigin } from "../middleware/security.js";
 
 export interface AuthRouteDeps {
@@ -79,7 +80,7 @@ export function createAuthRouter(deps: AuthRouteDeps): Router {
     upload.single("file"),
     async (req, res) => {
       const ip = ipOf(req);
-      const result = req.file ? await deps.auth.loginWithKeyFile(req.file.buffer) : null;
+      const result = req.file ? await deps.auth.loginWithKeyFile(req.file.buffer, deviceLabel(req.headers["user-agent"])) : null;
 
       if (!result) {
         deps.bruteForce.recordFailure(ip, "login");

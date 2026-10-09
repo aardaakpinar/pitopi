@@ -113,12 +113,43 @@ export function parseImageDataUrl(value: unknown, maxChars: number): string | nu
   return matchesImageSignature(match[1], body) ? value : null;
 }
 
-export function parseStoryUpload(payload: unknown): { data: string; caption: string } | null {
+export type StoryVisibility = "everyone" | "selected";
+
+export interface StoryUpload {
+  data: string;
+  caption: string;
+  visibility: StoryVisibility;
+  /** Persistent ids allowed to see a "selected" story (empty for "everyone"). */
+  audience: string[];
+}
+
+export function parseStoryUpload(payload: unknown): StoryUpload | null {
   if (!isDict(payload) || payload.type !== "image") return null;
   const data = parseImageDataUrl(payload.data, LIMITS.maxStoryDataChars);
   if (!data) return null;
   const caption = typeof payload.caption === "string" ? payload.caption.slice(0, LIMITS.maxCaptionChars) : "";
-  return { data, caption };
+
+  // Missing visibility keeps the old behaviour (public) for older clients.
+  const visibility: StoryVisibility = payload.visibility === "selected" ? "selected" : "everyone";
+  let audience: string[] = [];
+  if (visibility === "selected") {
+    if (!Array.isArray(payload.audience) || payload.audience.length === 0) return null;
+    if (payload.audience.length > LIMITS.maxStoryAudience) return null;
+    const ids = new Set<string>();
+    for (const id of payload.audience) {
+      if (typeof id !== "string" || !PERSISTENT_ID_REGEX.test(id)) return null;
+      ids.add(id);
+    }
+    audience = Array.from(ids);
+  }
+  return { data, caption, visibility, audience };
+}
+
+const SESSION_ID_REGEX = /^[a-f0-9]{16}$/;
+
+export function parseSessionId(payload: unknown): string | null {
+  if (!isDict(payload)) return null;
+  return typeof payload.id === "string" && SESSION_ID_REGEX.test(payload.id) ? payload.id : null;
 }
 
 export function parseStoryRef(payload: unknown): { persistentUserId: string; storyId: string } | null {

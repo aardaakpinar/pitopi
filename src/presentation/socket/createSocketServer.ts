@@ -17,6 +17,7 @@ import { createEventRegistrar, type SocketContext } from "./guard.js";
 import { registerAuthHandler } from "./handlers/authHandler.js";
 import { registerCallHandlers } from "./handlers/callHandler.js";
 import { registerProfileHandlers } from "./handlers/profileHandler.js";
+import { registerSessionHandlers } from "./handlers/sessionHandler.js";
 import { registerStoryHandlers } from "./handlers/storyHandler.js";
 import type { HandlerDeps } from "./handlers/types.js";
 
@@ -76,6 +77,7 @@ export function createSocketServer(httpServer: http.Server, deps: SocketServerDe
     registerCallHandlers(ctx, on, handlerDeps);
     registerStoryHandlers(ctx, on, handlerDeps);
     registerProfileHandlers(ctx, on, handlerDeps);
+    registerSessionHandlers(ctx, on, handlerDeps);
 
     socket.on("error", (err) => logger.error("Socket error", err));
 

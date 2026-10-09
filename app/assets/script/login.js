@@ -57,16 +57,20 @@ function switchTab(tab) {
 // Tab buttons (previously inline onclick="switchTab(...)")
 document.querySelectorAll("[data-tab]").forEach((el) => el.addEventListener("click", () => switchTab(el.dataset.tab)));
 
-document.getElementById("token-file").addEventListener("change", function () {
+document.getElementById("token-file").addEventListener("change", async function () {
 	const file = this.files[0];
 	const label = document.getElementById("file-label");
 	const zone = document.getElementById("upload-zone");
 	const btn = document.getElementById("login-btn");
+	const pw = document.getElementById("key-password");
 	if (file) {
 		label.textContent = file.name;
 		label.classList.add("selected");
 		zone.classList.add("active");
 		btn.disabled = false;
+		// A password-protected key file asks for its password.
+		pw.style.display = file.size === KeyFile.PROTECTED_SIZE ? "block" : "none";
+		if (pw.style.display === "block") pw.focus();
 	}
 });
 
@@ -77,10 +81,29 @@ document.getElementById("login-btn").addEventListener("click", async () => {
 	const file = fileInput.files[0];
 	if (!file) return;
 
-	if (file.size !== EXPECTED_KEY_FILE_SIZE) {
-		errorEl.textContent = t("server_invalid_key");
+	const showError = (message) => {
+		errorEl.textContent = message;
 		errorEl.style.display = "block";
-		return;
+	};
+
+	// Resolve the plain key file locally. A protected file is decrypted in the
+	// browser, so the password never leaves the device and the server only ever
+	// receives the same 101 bytes as before.
+	let rawBytes;
+	try {
+		const bytes = await KeyFile.readFile(file);
+		const kind = KeyFile.kind(bytes);
+		if (kind === "protected") {
+			const password = document.getElementById("key-password").value;
+			if (!password) return showError(t("key_password"));
+			rawBytes = await KeyFile.unprotect(bytes, password);
+		} else if (kind === "raw") {
+			rawBytes = bytes;
+		} else {
+			return showError(t("server_invalid_key"));
+		}
+	} catch (err) {
+		return showError(err.message === "wrong_password" ? t("key_wrong_password") : t("server_invalid_key"));
 	}
 
 	btnEl.disabled = true;
@@ -89,7 +112,7 @@ document.getElementById("login-btn").addEventListener("click", async () => {
 
 	try {
 		const formData = new FormData();
-		formData.append("file", file);
+		formData.append("file", new Blob([rawBytes]), "login.key");
 		const res = await fetch("/login", { method: "POST", body: formData });
 		const data = await res.json();
 
@@ -99,6 +122,14 @@ document.getElementById("login-btn").addEventListener("click", async () => {
 			btnEl.disabled = false;
 			btnEl.textContent = t("login_button");
 			return;
+		}
+
+		// Derive the local-history keys now, while the key file is at hand. Failing
+		// here is harmless: history can still be unlocked later from the settings.
+		try {
+			await HistoryStore.saveKeys(await KeyFile.deriveHistoryKeys(rawBytes));
+		} catch (err) {
+			console.warn("History keys unavailable:", err);
 		}
 
 		localStorage.setItem(SESSION_KEY, data.sessionToken);
@@ -118,7 +149,12 @@ document.getElementById("signup-btn").addEventListener("click", async () => {
 	try {
 		const res = await fetch("/signup", { method: "POST" });
 		if (!res.ok) throw new Error("Server returned " + res.status);
-		const blob = await res.blob();
+		let blob = await res.blob();
+		const password = document.getElementById("signup-password").value;
+		if (password) {
+			if (password.length < 8) throw new Error(t("key_password_short"));
+			blob = new Blob([await KeyFile.protect(new Uint8Array(await blob.arrayBuffer()), password)]);
+		}
 		const url = URL.createObjectURL(blob);
 		const disp = res.headers.get("Content-Disposition") || "";
 		const match = disp.match(/filename="([^"]+)"/);

@@ -30,8 +30,22 @@ export class Broadcaster {
     if (this.storiesTimer) return;
     this.storiesTimer = setTimeout(() => {
       this.storiesTimer = null;
-      this.io.to(AUTHED_ROOM).emit("stories-updated", this.stories.feed());
+      this.emitStories();
     }, 250);
+  }
+
+  /**
+   * Feeds only differ per viewer while some story is limited to an audience;
+   * otherwise one shared payload is enough.
+   */
+  private emitStories(): void {
+    if (!this.stories.hasRestricted()) {
+      this.io.to(AUTHED_ROOM).emit("stories-updated", this.stories.feed(""));
+      return;
+    }
+    for (const user of this.presence.allOnline()) {
+      this.io.to(user.socketId).emit("stories-updated", this.stories.feed(user.persistentUserId));
+    }
   }
 
   stop(): void {

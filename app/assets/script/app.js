@@ -8,6 +8,9 @@ const STORAGE_KEYS = {
 	HIDDEN: "p2p_hidden",
 	REMOTE_ID: "p2p_remote_id",
 	CONNECTION_STATUS: "p2p_connection_status",
+	HISTORY: "pp_history",
+	RECEIPTS: "pp_receipts",
+	BLUR: "pp_blur",
 };
 
 const CONNECTION_STATES = {
@@ -68,12 +71,23 @@ const state = {
 	messages: {},
 	isConnected: null,
 	socketChatTimer: null,
+	settings: loadSettings(),
+	// Contacts with saved (encrypted, local) history; refreshed from HistoryStore.
+	savedPeers: [],
+	// Composer context: { id, text } for a reply, or the message being edited.
+	replyTo: null,
+	editing: null,
+	// Disappearing-message lifetime in seconds (0 = off), shared with the peer.
+	ttl: 0,
+	// Incoming message ids whose delivery/read receipts are still owed: id -> "new" | "delivered".
+	receiptQueue: new Map(),
 	crypto: {
 		localKeyPair: null,
 		localPublicKey: null,
 		remotePublicKey: null,
 		sharedKey: null,
 		safetyShown: false,
+		safetyCode: null,
 	},
 };
 
@@ -146,10 +160,14 @@ const textDecoder = new TextDecoder();
 /*
  * 5. Initialization
  */
+let appInitialized = false;
 function initApp() {
+	if (appInitialized) return;
+	appInitialized = true;
 	setupEventListeners();
 	initUIEventListeners();
 	initFileUpload();
+	initMessaging();
 }
 
 function initFileUpload() {
@@ -182,6 +200,7 @@ function initFileUpload() {
 
 			const fileMeta = {
 				type: "file",
+				id: Msgs.newId(),
 				name: file.name,
 				size: file.size,
 				mimeType: file.type,
@@ -190,7 +209,7 @@ function initFileUpload() {
 
 			try {
 				await sendFileInChunks(fileMeta);
-				renderFilePreview(fileMeta, "me");
+				renderFilePreview(fileMeta, "me", fileMeta.id, { ttl: state.ttl });
 				fileInput.value = "";
 			} catch (error) {
 				console.error("File send error:", error);
@@ -250,7 +269,7 @@ async function sendFileInChunks(fileMeta) {
 	const { name, mimeType, data } = fileMeta;
 	const totalChunks = Math.ceil(data.length / chunkSize);
 
-	await sendSecurePayload({ type: "file-meta", name, mimeType, totalChunks });
+	await sendSecurePayload({ type: "file-meta", id: fileMeta.id, name, mimeType, totalChunks, ttl: state.ttl });
 
 	for (let i = 0; i < totalChunks; i++) {
 		const chunk = data.slice(i * chunkSize, (i + 1) * chunkSize);
@@ -366,7 +385,7 @@ function sanitizeFileName(name) {
 	return String(name || "file").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").slice(0, 128) || "file";
 }
 
-function renderFilePreview(fileMeta, from) {
+function renderFilePreview(fileMeta, from, id = Msgs.newId(), extra = {}) {
 	const name = sanitizeFileName(fileMeta.name);
 	const data = fileMeta.data;
 	// The data URL's own MIME type is authoritative; the peer-claimed one is ignored.
@@ -374,7 +393,7 @@ function renderFilePreview(fileMeta, from) {
 
 	// Peer-supplied data is never interpolated into HTML; only DOM APIs are used.
 	if (!isDataUrl(data)) {
-		logMessage(name, from);
+		addMessageContent(name, from, id, extra, name);
 		return;
 	}
 
@@ -383,38 +402,46 @@ function renderFilePreview(fileMeta, from) {
 		node = document.createElement("img");
 		node.src = data;
 		node.alt = name;
-		node.className = "max-w-[200px] rounded-lg";
+		node.className = "pp-image";
 	} else if (mimeType.startsWith("audio/")) {
 		node = document.createElement("audio");
 		node.controls = true;
 		node.src = data;
-		node.className = "mt-2";
+		node.className = "pp-audio";
 	} else {
 		node = document.createElement("div");
-		node.className = "flex items-center space-x-4 bg-gray-100 dark:bg-gray-800 p-3 rounded max-w-md";
+		node.className = "pp-file";
 
-		const iconWrap = document.createElement("div");
-		iconWrap.className = "flex-shrink-0";
-		const icon = document.createElement("i");
-		icon.className = `fas ${getFileIconClass(name, mimeType)} text-3xl text-gray-600 dark:text-gray-300`;
-		iconWrap.appendChild(icon);
+		const iconWrap = ppEl("div", "pp-file-icon");
+		iconWrap.appendChild(ppIcon(getFileIconClass(name, mimeType)));
 
-		const info = document.createElement("div");
-		info.className = "flex-grow min-w-0";
-		const title = document.createElement("p");
-		title.className = "text-md font-semibold text-gray-900 dark:text-gray-100 truncate";
-		title.textContent = name;
-		const link = document.createElement("a");
+		const info = ppEl("div", "pp-file-info");
+		const title = ppEl("p", "pp-file-name", name);
+		const link = ppEl("a", "pp-link", t("download_file"));
 		link.href = data;
 		link.download = name;
 		link.rel = "noopener noreferrer";
-		link.className = "text-sm text-accent hover:underline";
-		link.textContent = t("download_file");
 		info.append(title, link);
 
 		node.append(iconWrap, info);
 	}
-	logMessage(node, from);
+	addMessageContent(node, from, id, extra, name);
+}
+
+// Shows a message and, when local history is on, stores it (encrypted).
+function addMessageContent(content, from, id, extra = {}, fileName) {
+	const isNode = content instanceof Node;
+	const entry = Msgs.add({
+		id,
+		from,
+		text: isNode ? "" : content,
+		node: isNode ? content : null,
+		ttl: extra.ttl || 0,
+		replyTo: extra.replyTo || null,
+	});
+	if (!entry) return null;
+	persistMessage(entry, isNode || fileName ? "file" : "text", fileName);
+	return entry;
 }
 
 function setAvatar(container, src, alt) {
@@ -422,7 +449,6 @@ function setAvatar(container, src, alt) {
 	const img = document.createElement("img");
 	img.src = safeImageSrc(src);
 	img.alt = alt || "";
-	img.className = "w-full h-full rounded-full object-cover";
 	container.replaceChildren(img);
 }
 
@@ -448,6 +474,7 @@ function resetSessionCrypto() {
 	state.crypto.remotePublicKey = null;
 	state.crypto.sharedKey = null;
 	state.crypto.safetyShown = false;
+	state.crypto.safetyCode = null;
 }
 
 // Safety number: a short code derived from BOTH public keys. If a server (or
@@ -470,12 +497,12 @@ async function computeSafetyNumber() {
 	return groups.join(" ");
 }
 
+// The code is no longer dumped into the conversation; it lives in the chat menu.
 async function showSafetyNumber() {
 	if (state.crypto.safetyShown) return;
 	state.crypto.safetyShown = true;
 	try {
-		const code = await computeSafetyNumber();
-		if (code) showSystemMessage(t("safety_number", { code }));
+		state.crypto.safetyCode = await computeSafetyNumber();
 	} catch (error) {
 		console.error("Safety number error:", error);
 	}
@@ -568,14 +595,7 @@ const sidebarButtons = [
 
 function activateButton(buttonList, activeId) {
 	buttonList.forEach(({ id }) => {
-		const btn = document.getElementById(id);
-		if (id === activeId) {
-			btn.classList.add("text-accent");
-			btn.classList.remove("text-gray-500");
-		} else {
-			btn.classList.remove("text-accent");
-			btn.classList.add("text-gray-500");
-		}
+		document.getElementById(id)?.classList.toggle("is-active", id === activeId);
 	});
 }
 
@@ -641,7 +661,7 @@ function handleProfilePictureUpload() {
 	img.src = objectUrl;
 }
 
-function handleStoryUpload() {
+async function handleStoryUpload() {
 	const file = elements.storyInput.files[0];
 	if (!file) return;
 	if (!ALLOWED_UPLOAD_IMAGES.includes(file.type)) {
@@ -655,9 +675,16 @@ function handleStoryUpload() {
 		return;
 	}
 
+	// Ask who may see it before anything leaves the device.
+	const audience = await chooseStoryAudience();
+	if (!audience) {
+		elements.storyInput.value = "";
+		return;
+	}
+
 	const reader = new FileReader();
 	reader.onload = () => {
-		socket.emit("upload-story", { data: reader.result, type: "image", caption: "" }, (res) => {
+		socket.emit("upload-story", { data: reader.result, type: "image", caption: "", visibility: audience.visibility, audience: audience.audience }, (res) => {
 			showToast(res?.ok ? t("story_upload") : t(res?.reason === "limit" ? "story_limit" : "story_upload_failed"));
 		});
 		elements.storyInput.value = "";
@@ -701,19 +728,137 @@ async function sendMessage() {
 	}
 
 	try {
-		await sendSecurePayload({ type: "text", message: text });
-		logMessage(text, "me");
+		if (state.editing) {
+			await submitEdit(text);
+			return;
+		}
+
+		const id = Msgs.newId();
+		const replyTo = state.replyTo ? { id: state.replyTo.id, text: state.replyTo.text } : null;
+		const ttl = state.ttl;
+		await sendSecurePayload({ type: "text", id, message: text, replyTo, ttl });
+		addMessageContent(text, "me", id, { replyTo, ttl });
 		elements.messageInput.value = "";
+		resetComposerState();
 	} catch (error) {
 		console.error("Error sending message:", error);
 		showSystemMessage(t("message_send_failed"));
 	}
 }
 
+/* ----- composer context (reply / edit) ----- */
+function showComposeContext(icon, label, text) {
+	const bar = document.getElementById("compose-context");
+	if (!bar) return;
+	bar.querySelector(".pp-context-icon").replaceChildren(ppIcon(icon));
+	bar.querySelector(".pp-context-label").textContent = label;
+	bar.querySelector(".pp-context-text").textContent = text;
+	bar.classList.remove("hidden");
+	elements.messageInput?.focus();
+}
+
+function resetComposerState() {
+	if (state.editing && elements.messageInput) elements.messageInput.value = "";
+	state.replyTo = null;
+	state.editing = null;
+	document.getElementById("compose-context")?.classList.add("hidden");
+}
+
+function startReply(id) {
+	const entry = Msgs.get(id);
+	if (!entry || entry.deleted) return;
+	state.editing = null;
+	state.replyTo = { id, text: entry.node ? t("attachment") : Msgs.preview(entry.text) };
+	showComposeContext("fa-reply", t("replying_to"), state.replyTo.text);
+}
+
+function startEdit(id) {
+	const entry = Msgs.get(id);
+	if (!entry || entry.from !== "me" || entry.node || entry.deleted) return;
+	state.replyTo = null;
+	state.editing = { id };
+	elements.messageInput.value = entry.text;
+	showComposeContext("fa-pen", t("editing_message"), Msgs.preview(entry.text));
+}
+
+async function submitEdit(text) {
+	const { id } = state.editing;
+	const entry = Msgs.get(id);
+	if (entry && entry.from === "me" && !entry.node) {
+		await sendSecurePayload({ type: "edit", target: id, message: text });
+		Msgs.edit(id, text);
+		persistPatch(id, { text, edited: true });
+	}
+	state.editing = null;
+	elements.messageInput.value = "";
+	resetComposerState();
+}
+
+async function deleteMessage(id) {
+	const entry = Msgs.get(id);
+	if (!entry || entry.from !== "me") return;
+	if (!(await ppConfirm({ title: t("delete_message_title"), message: t("delete_message_text"), confirmLabel: t("delete"), danger: true }))) return;
+	try {
+		await sendSecurePayload({ type: "delete", target: id });
+		Msgs.markDeleted(id);
+		persistRemoval(id);
+	} catch {
+		showToast(t("message_send_failed"));
+	}
+}
+
+async function reactToMessage(id, emoji) {
+	const entry = Msgs.get(id);
+	if (!entry || entry.deleted) return;
+	try {
+		await sendSecurePayload({ type: "reaction", target: id, emoji });
+		Msgs.setReaction(id, "me", emoji);
+		persistPatch(id, { reactions: { me: entry.reactions.me, them: entry.reactions.them } });
+	} catch {
+		showToast(t("message_send_failed"));
+	}
+}
+
+/* ----- delivery / read receipts ----- */
+function onIncomingMessage(id) {
+	state.receiptQueue.set(id, "new");
+	flushReceipts();
+}
+
+function flushReceipts() {
+	if (!state.connectionStatus || !state.crypto.sharedKey || !state.receiptQueue.size) return;
+	const visible = document.visibilityState === "visible" && document.hasFocus();
+	const read = [];
+	const delivered = [];
+	for (const [id, status] of state.receiptQueue) {
+		if (state.settings.receipts && visible) {
+			read.push(id);
+			state.receiptQueue.delete(id);
+		} else if (status === "new") {
+			delivered.push(id);
+			if (state.settings.receipts) state.receiptQueue.set(id, "delivered");
+			else state.receiptQueue.delete(id);
+		}
+	}
+	const send = async (ids, status) => {
+		for (let i = 0; i < ids.length; i += 50) {
+			await sendSecurePayload({ type: "receipt", status, ids: ids.slice(i, i + 50) }).catch(() => {});
+		}
+	};
+	if (delivered.length) send(delivered, "delivered");
+	if (read.length) send(read, "read");
+}
+
 function resetReceivingFile() {
 	receivingFile.meta = null;
 	receivingFile.chunks = [];
 	receivingFile.received = 0;
+}
+
+function clearPeerTyping() {
+	if (!elements.chatStatus) return;
+	elements.chatStatus.textContent = t("status_encrypted");
+	elements.chatStatus.classList.remove("is-typing");
 }
 
 // Everything a peer sends is untrusted, even though it decrypted fine:
@@ -728,7 +873,12 @@ function handlePlainMessage(msg) {
 				resetReceivingFile();
 				return;
 			}
-			receivingFile.meta = { name: sanitizeFileName(msg.name), totalChunks: total };
+			receivingFile.meta = {
+				name: sanitizeFileName(msg.name),
+				totalChunks: total,
+				id: Msgs.isValidId(msg.id) ? msg.id : Msgs.newId(),
+				ttl: Msgs.isValidTtl(msg.ttl) ? msg.ttl : 0,
+			};
 			receivingFile.chunks = new Array(total);
 			receivingFile.received = 0;
 			return;
@@ -746,99 +896,95 @@ function handlePlainMessage(msg) {
 			if (receivingFile.received < meta.totalChunks) return;
 
 			const data = receivingFile.chunks.join("");
-			const name = meta.name;
+			const { name, id, ttl } = meta;
 			resetReceivingFile();
-			renderFilePreview({ type: "file", name, data }, "them");
+			renderFilePreview({ type: "file", name, data }, "them", id, { ttl });
+			clearPeerTyping();
+			onIncomingMessage(id);
 			playNotificationSound();
 			return;
 		}
-		case "text":
+		case "text": {
 			if (typeof msg.message !== "string" || msg.message.length > MAX_TEXT_LENGTH) return;
-			logMessage(msg.message, "them");
+			const id = Msgs.isValidId(msg.id) ? msg.id : Msgs.newId();
+			const entry = addMessageContent(msg.message, "them", id, { replyTo: msg.replyTo, ttl: Msgs.isValidTtl(msg.ttl) ? msg.ttl : 0 });
+			if (!entry) return;
+			clearPeerTyping();
+			onIncomingMessage(id);
 			playNotificationSound();
+			return;
+		}
+		case "receipt": {
+			if (!Array.isArray(msg.ids) || msg.ids.length > 50) return;
+			if (msg.status !== "delivered" && msg.status !== "read") return;
+			for (const id of msg.ids) if (Msgs.isValidId(id)) Msgs.setStatus(id, msg.status);
+			return;
+		}
+		case "reaction": {
+			const emoji = msg.emoji ?? null;
+			if (!Msgs.isValidId(msg.target) || !Msgs.isValidReaction(emoji)) return;
+			const entry = Msgs.get(msg.target);
+			if (entry && Msgs.setReaction(msg.target, "them", emoji)) {
+				persistPatch(msg.target, { reactions: { me: entry.reactions.me, them: entry.reactions.them } });
+			}
+			return;
+		}
+		case "edit": {
+			if (!Msgs.isValidId(msg.target) || typeof msg.message !== "string" || msg.message.length > MAX_TEXT_LENGTH) return;
+			const entry = Msgs.get(msg.target);
+			// A peer may only change its own messages.
+			if (entry && entry.from === "them" && Msgs.edit(msg.target, msg.message)) {
+				persistPatch(msg.target, { text: msg.message, edited: true });
+			}
+			return;
+		}
+		case "delete": {
+			if (!Msgs.isValidId(msg.target)) return;
+			const entry = Msgs.get(msg.target);
+			if (entry && entry.from === "them" && Msgs.markDeleted(msg.target)) persistRemoval(msg.target);
+			return;
+		}
+		case "ttl":
+			if (Msgs.isValidTtl(msg.seconds)) applyTtl(msg.seconds);
 			return;
 		case "typing":
 			if (elements.chatStatus) {
 				elements.chatStatus.textContent = t("typing");
-				elements.chatStatus.style.color = "orange";
+				elements.chatStatus.classList.add("is-typing");
 			}
 			return;
 		case "stop-typing":
-			if (elements.chatStatus) {
-				elements.chatStatus.textContent = t("text-available");
-				elements.chatStatus.style.color = "";
-			}
+			clearPeerTyping();
 			return;
 	}
 }
 
-function formatTime(date) {
-	return date.toLocaleString("en-US", {
-		hour: "numeric",
-		minute: "numeric",
-		hour12: false,
+function initMessaging() {
+	Msgs.init(elements.messagesContainer, {
+		canAct: () => state.currentView === "chat" && state.connectionStatus,
+		onReply: startReply,
+		onEdit: startEdit,
+		onDelete: deleteMessage,
+		onReact: reactToMessage,
 	});
-}
 
-function logMessage(text, from) {
-	if (!elements.messagesContainer) return;
+	document.getElementById("compose-cancel")?.addEventListener("click", resetComposerState);
+	document.getElementById("voice-btn")?.addEventListener("click", startVoice);
+	document.getElementById("voice-cancel")?.addEventListener("click", () => stopVoice(false));
+	document.getElementById("voice-send")?.addEventListener("click", () => stopVoice(true));
 
-	const wrapper = document.createElement("div");
-	wrapper.className = "mb-4";
-
-	const row = document.createElement("div");
-	row.className = `flex ${from === "me" ? "justify-end" : "justify-start"}`;
-
-	const msgDiv = document.createElement("div");
-	msgDiv.className = `max-w-[80%] px-3 py-2 rounded-lg ${from === "me" ? "bg-messageBg-light dark:bg-messageBg-dark rounded-br-none" : "bg-messageBg-light dark:bg-messageBg-dark rounded-bl-none"}`;
-
-	if (text instanceof Node) {
-		msgDiv.appendChild(text);
-	} else {
-		text = String(text ?? "");
-		const parts = text.split(/(https?:\/\/[^\s]+)/g);
-		parts.forEach((part) => {
-			if (part.match(/https?:\/\/[^\s]+/)) {
-				try {
-					const url = new URL(part);
-					const a = document.createElement("a");
-					a.href = url.href;
-					a.target = "_blank";
-					a.rel = "noopener noreferrer";
-					a.style.textDecoration = "underline";
-					a.textContent = part;
-					msgDiv.appendChild(a);
-				} catch {
-					msgDiv.appendChild(document.createTextNode(part));
-				}
-			} else {
-				msgDiv.appendChild(document.createTextNode(part));
-			}
-		});
-	}
-
-	row.appendChild(msgDiv);
-
-	const timeDiv = document.createElement("div");
-	timeDiv.className = `text-xs text-gray-500 dark:text-gray-400 ${from === "me" ? "text-right" : "text-left"} mt-1`;
-	timeDiv.textContent = formatTime(new Date());
-
-	wrapper.appendChild(row);
-	wrapper.appendChild(timeDiv);
-	elements.messagesContainer.appendChild(wrapper);
-	elements.messagesContainer.scrollTop = elements.messagesContainer.scrollHeight;
+	const onVisibility = () => {
+		applyBlurSetting();
+		flushReceipts();
+	};
+	document.addEventListener("visibilitychange", onVisibility);
+	window.addEventListener("focus", onVisibility);
+	window.addEventListener("blur", applyBlurSetting);
+	applyBlurSetting();
 }
 
 function showSystemMessage(message) {
-	if (!elements.messagesContainer) return;
-	const wrapper = document.createElement("div");
-	wrapper.className = "flex justify-center mb-4";
-	const msgDiv = document.createElement("div");
-	msgDiv.className = "bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full text-sm text-gray-600 dark:text-gray-300";
-	msgDiv.textContent = message;
-	wrapper.appendChild(msgDiv);
-	elements.messagesContainer.appendChild(wrapper);
-	elements.messagesContainer.scrollTop = elements.messagesContainer.scrollHeight;
+	Msgs.system(message);
 }
 
 async function startCall(id) {
@@ -847,11 +993,8 @@ async function startCall(id) {
 		return;
 	}
 
-	if (state.connectionStatus) {
-		const confirmReconnect = confirm(t("already_connected_confirm"));
-		if (!confirmReconnect) return;
-		handleChatDisconnect(false);
-	}
+	// openChat() has already dealt with an existing connection.
+	if (state.connectionStatus) return;
 
 	resetSessionCrypto();
 
@@ -936,7 +1079,6 @@ function openStory(user) {
 
 	elements.noChatPlaceholder?.classList.add("hidden");
 	panel.classList.remove("hidden");
-	document.getElementById("chat-panel")?.classList.remove("hidden");
 	document.getElementById("chat-panel")?.classList.remove("mobile-chat-closed");
 	document.getElementById("chat-panel")?.classList.add("mobile-chat-open");
 
@@ -946,10 +1088,10 @@ function openStory(user) {
 	progressContainer.replaceChildren();
 	stories.forEach((_, i) => {
 		const bar = document.createElement("div");
-		bar.className = "h-full bg-gray-700 relative flex-1 mx-0.5 overflow-hidden rounded";
+		bar.className = "pp-bar";
 		const fill = document.createElement("div");
 		fill.id = `progress-fill-${i}`;
-		fill.className = "absolute top-0 left-0 h-full bg-accent w-0 transition-all";
+		fill.className = "pp-bar-fill";
 		bar.appendChild(fill);
 		progressContainer.appendChild(bar);
 	});
@@ -978,12 +1120,19 @@ function openStory(user) {
 		eye.className = "fas fa-eye";
 		viewersCountDiv.replaceChildren(eye, document.createTextNode(` ${Number(story.viewersCount) || 0}`));
 
+		const visibilityEl = document.getElementById("story-visibility");
+		if (visibilityEl) {
+			const restricted = user.persistentUserId === state.myPersistentId && story.visibility === "selected";
+			visibilityEl.classList.toggle("hidden", !restricted);
+			if (restricted) visibilityEl.replaceChildren(ppIcon("fa-user-lock"), document.createTextNode(` ${Number(story.audienceCount) || 0}`));
+		}
+
 		if (user.persistentUserId === state.myPersistentId) {
 			const deleteBtn = document.getElementById("delete-story-btn");
 			if (deleteBtn) {
 				deleteBtn.classList.remove("hidden");
-				deleteBtn.onclick = () => {
-					if (confirm(t("story_delete_confirm"))) {
+				deleteBtn.onclick = async () => {
+					if (await ppConfirm({ title: t("aria_delete_story"), message: t("story_delete_confirm"), confirmLabel: t("delete"), danger: true })) {
 						socket.emit("delete-story", { storyId: story.id });
 						closeStory();
 					}
@@ -1022,6 +1171,7 @@ function closeStory() {
 
 	const deleteBtn = document.getElementById("delete-story-btn");
 	if (deleteBtn) deleteBtn.classList.add("hidden");
+	document.getElementById("story-visibility")?.classList.add("hidden");
 
 	const img = document.getElementById("story-image");
 	if (img) img.removeAttribute("src");
@@ -1030,7 +1180,6 @@ function closeStory() {
 	document.getElementById("story-progress-container").replaceChildren();
 
 	const chatPanel = document.getElementById("chat-panel");
-	chatPanel?.classList.add("hidden");
 	chatPanel?.classList.add("mobile-chat-closed");
 	chatPanel?.classList.remove("mobile-chat-open");
 
@@ -1055,11 +1204,22 @@ function prepareChatUI() {
 		elements.chatPanel.classList.remove("mobile-chat-closed");
 	}
 
-	elements.messagesContainer?.replaceChildren();
+	Msgs.reset();
+	resetComposerState();
+	state.ttl = 0;
+	state.receiptQueue.clear();
+	elements.chatContent?.classList.remove("pp-readonly");
 	setTimeout(() => elements.messageInput?.focus(), 0);
 }
 
-function openChat(user) {
+async function openChat(user) {
+	// Decide about an existing connection BEFORE touching the UI, otherwise
+	// closing the old chat would also hide the one we are about to open.
+	if (state.connectionStatus) {
+		if (!(await ppConfirm({ title: t("chats_tab_label"), message: t("already_connected_confirm"), confirmLabel: t("confirm") }))) return;
+		handleChatDisconnect(false);
+	}
+
 	closeStory();
 	state.activeChat = user;
 	state.selectedUser = user;
@@ -1073,6 +1233,7 @@ function openChat(user) {
 	}
 	if (elements.chatStatus) elements.chatStatus.textContent = t("text-available");
 
+	loadHistoryInto(user);
 	startCall(user.socketId);
 }
 
@@ -1092,34 +1253,29 @@ function closeChat() {
 	}
 
 	elements.noChatPlaceholder?.classList.remove("hidden");
-	elements.messagesContainer?.replaceChildren();
+	Msgs.reset();
+	resetComposerState();
+	elements.chatContent?.classList.remove("pp-readonly");
 }
 
 function toggleFloatingMenu() {
 	const menu = document.getElementById("floating-menu");
-	const isVisible = !menu.classList.contains("hidden");
-
-	if (isVisible) {
+	if (!menu.classList.contains("hidden")) {
 		menu.classList.add("hidden");
 		return;
 	}
 
-	const copyBtn = document.getElementById("copy-id-btn");
-	const leaveBtn = document.getElementById("leave-btn");
-
-	if (state.currentView === "chat") {
-		copyBtn.onclick = () => {
-			navigator.clipboard.writeText(state.selectedUser.socketId);
-			showToast(t("copied_id"));
+	menu.replaceChildren();
+	for (const item of buildChatMenu()) {
+		const btn = ppEl("button", `pp-menu-item${item.danger ? " pp-menu-item--danger" : ""}`);
+		btn.type = "button";
+		btn.append(ppIcon(item.icon), document.createTextNode(item.label));
+		btn.addEventListener("click", () => {
 			menu.classList.add("hidden");
-		};
-		leaveBtn.classList.remove("hidden");
-		leaveBtn.onclick = () => {
-			handleChatDisconnect(false);
-			menu.classList.add("hidden");
-		};
+			item.run();
+		});
+		menu.appendChild(btn);
 	}
-
 	menu.classList.remove("hidden");
 }
 
@@ -1161,46 +1317,20 @@ function playNotificationSound() {
 function searchInCurrentTab(query) {
 	if (!state.isConnected) {
 		const msg = document.createElement("div");
-		msg.className = "text-center text-gray-500 dark:text-gray-400 py-10";
+		msg.className = "pp-empty";
 		msg.textContent = t("connecting");
 		elements.chatsList.replaceChildren(msg);
 		return;
 	}
 
 	const q = query.trim().toLowerCase();
-	const settings = [
-		{
-			iconClass: "fa-copy",
-			label: t("copy_id"),
-			onClick: () => {
-				navigator.clipboard.writeText(state.myId);
-				showToast(t("copied_id"));
-			},
-		},
-		{
-			iconClass: "fa-camera",
-			label: t("upload_photo"),
-			onClick: () => document.getElementById("uploadAvatarInput")?.click(),
-		},
-		{
-			iconClass: "fa-user-secret",
-			label: state.hiddenFromSearch ? t("hidden_from_search") : t("visible_in_search"),
-			onClick: () => toggleSearchVisibility(),
-		},
-		{
-			iconClass: "fa-globe",
-			label: t("select_language"),
-			onClick: () => changeLanguage(),
-		},
-		{
-			iconClass: "fa-sign-out-alt",
-			label: t("log_out"),
-			onClick: () => logoutUser(),
-		},
-	];
+	const settings = getSettingsItems();
 
 	if (activeTabId === "btnChats" || activeTabId === "mobBtnChats") {
-		renderChatSearchResults(state.allUsers.filter((u) => u.socketId !== state.myId && !u.hidden && u.username.toLowerCase().includes(q)));
+		renderChatSearchResults(
+			state.allUsers.filter((u) => u.socketId !== state.myId && !u.hidden && u.username.toLowerCase().includes(q)),
+			offlineSavedPeers().filter((p) => p.username.toLowerCase().includes(q)),
+		);
 	} else if (activeTabId === "btnStorys" || activeTabId === "mobBtnStorys") {
 		renderStorySearchResults(Object.values(state.currentStories).filter((s) => s?.user?.username.toLowerCase().includes(q)));
 	} else if (activeTabId === "btnSettings" || activeTabId === "mobBtnSettings") {
@@ -1209,17 +1339,16 @@ function searchInCurrentTab(query) {
 }
 
 function showToast(message) {
-	document.querySelector(".toast")?.remove();
+	document.querySelector(".pp-toast")?.remove();
 
-	const toast = document.createElement("div");
-	toast.className = "toast fixed top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300";
-	toast.textContent = message;
+	const toast = ppEl("div", "pp-toast", message);
+	toast.setAttribute("role", "status");
 	document.body.appendChild(toast);
 
-	requestAnimationFrame(() => toast.classList.remove("translate-x-full"));
+	requestAnimationFrame(() => toast.classList.add("is-in"));
 	setTimeout(() => {
-		toast.classList.add("translate-x-full");
-		setTimeout(() => toast.remove(), 300);
+		toast.classList.remove("is-in");
+		setTimeout(() => toast.remove(), 250);
 	}, 3000);
 }
 
@@ -1244,6 +1373,7 @@ socket.on("your-id", ({ socketId, persistentUserId, username, profilePic }) => {
 
 socket.on("auth_ok", ({ user }) => {
 	console.log("Auth successful:", user);
+	refreshSavedPeers();
 });
 
 function serverMessage(code, params) {
@@ -1306,7 +1436,12 @@ socket.on("incoming-call", async ({ from, cryptoPublicKey }) => {
 		return;
 	}
 
-	const confirmConnect = confirm(`${caller.username} ${t("confirm_connect")}`);
+	const confirmConnect = await ppConfirm({
+		title: t("incoming_title"),
+		message: `${caller.username} ${t("confirm_connect")}`,
+		confirmLabel: t("accept"),
+		cancelLabel: t("decline"),
+	});
 	if (!confirmConnect) {
 		socket.emit("call-rejected", { targetId: from, reason: "rejected" });
 		return;
@@ -1330,6 +1465,7 @@ socket.on("incoming-call", async ({ from, cryptoPublicKey }) => {
 			setAvatar(elements.chatAvatar, caller.profilePic, caller.username);
 		}
 		if (elements.chatStatus) elements.chatStatus.textContent = t("text-available");
+		loadHistoryInto(caller);
 
 		socket.emit("send-answer", {
 			targetId: state.remoteId,
@@ -1386,6 +1522,8 @@ socket.on("call-rejected", ({ reason } = {}) => {
 async function logoutUser() {
 	const token = localStorage.getItem(STORAGE_KEYS.SESSION);
 	localStorage.removeItem(STORAGE_KEYS.SESSION);
+	// Removing the keys locks the saved history until the key file is used again.
+	await HistoryStore.clearKeys();
 	try {
 		if (token) await fetch("/logout", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
 	} catch {
@@ -1399,7 +1537,7 @@ function toggleSearchVisibility() {
 	localStorage.setItem(STORAGE_KEYS.HIDDEN, state.hiddenFromSearch);
 	showToast(state.hiddenFromSearch ? t("hidden_from_search") : t("visible_in_search"));
 	socket.emit("update-visibility", { hidden: state.hiddenFromSearch });
-	renderSettingsList();
+	renderSettingsList(true);
 }
 
 /*

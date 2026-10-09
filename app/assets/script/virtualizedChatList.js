@@ -31,14 +31,15 @@ class VirtualizedChatList {
     this.container.appendChild(this._listEl);
   }
 
-  setItems(items) {
+  setItems(items, keepScroll = false) {
+    const top = keepScroll ? this.container.scrollTop : 0;
     this._items = items;
     this._clearRendered();
 
     this._phantom.style.height = items.length * this.itemHeight + "px";
 
-    this.container.scrollTop = 0;
-    this._scrollTop = 0;
+    this.container.scrollTop = top;
+    this._scrollTop = top;
 
     this._render();
   }
@@ -122,33 +123,34 @@ class VirtualizedChatList {
 
 // ---- DOM builders: every dynamic value goes through textContent / property
 // ---- assignment, never through HTML parsing.
-const ITEM_CLASS =
-  "flex items-center px-4 py-3 border-b border-gray-200 dark:border-gray-800 " +
-  "hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer chat-item";
+const ITEM_CLASS = "pp-item chat-item";
 
-function buildAvatar(profilePic, alt) {
+function buildAvatar(profilePic, alt, { ring = false, online = false } = {}) {
   const wrap = document.createElement("div");
-  wrap.className =
-    "w-12 h-12 rounded-full flex items-center justify-center text-white font-medium shrink-0";
+  wrap.className = `pp-avatar${ring ? " pp-avatar--ring" : ""}`;
   const img = document.createElement("img");
   img.src = safeImageSrc(profilePic);
   img.alt = alt || "";
-  img.className = "w-full h-full rounded-full object-cover";
   img.loading = "lazy";
   wrap.appendChild(img);
+  if (online) {
+    const dot = document.createElement("span");
+    dot.className = "pp-online-dot";
+    wrap.appendChild(dot);
+  }
   return wrap;
 }
 
 function buildTextBlock(title, subtitle) {
   const block = document.createElement("div");
-  block.className = "ml-3 flex-1 min-w-0";
+  block.className = "pp-item-text";
   const titleEl = document.createElement("div");
-  titleEl.className = "font-medium truncate text-black dark:text-white";
+  titleEl.className = "pp-item-title";
   titleEl.textContent = title;
   block.appendChild(titleEl);
   if (subtitle !== undefined) {
     const sub = document.createElement("div");
-    sub.className = "text-sm text-gray-500 truncate";
+    sub.className = "pp-item-sub";
     sub.textContent = subtitle;
     block.appendChild(sub);
   }
@@ -165,13 +167,44 @@ function makeChatItem(user, { t, openChat }) {
       el.className = ITEM_CLASS;
       el.dataset.userId = user.socketId;
       el.append(
-        buildAvatar(user.profilePic, user.username),
+        buildAvatar(user.profilePic, user.username, { online: true }),
         buildTextBlock(user.username, user.busy ? t("text-busy") : t("text-available")),
       );
       el.addEventListener("click", () => openChat(user));
       return el;
     },
   };
+}
+
+// A conversation kept in the encrypted local history; the person may be offline.
+function makeSavedChatItem(peer, { t, openArchive }) {
+  return {
+    type: "saved-chat",
+    data: peer,
+
+    render() {
+      const el = document.createElement("div");
+      el.className = ITEM_CLASS;
+      el.append(
+        buildAvatar(null, peer.username),
+        buildTextBlock(peer.username, t("saved_chat_sub")),
+      );
+      const clock = document.createElement("i");
+      clock.className = "fas fa-clock-rotate-left pp-item-trail";
+      clock.setAttribute("aria-hidden", "true");
+      el.appendChild(clock);
+      el.addEventListener("click", () => openArchive(peer));
+      return el;
+    },
+  };
+}
+
+// Online people first, then saved conversations with people who are not online.
+function buildChatItems(users, savedPeers) {
+  return [
+    ...users.map((u) => makeChatItem(u, { t, openChat })),
+    ...savedPeers.map((p) => makeSavedChatItem(p, { t, openArchive })),
+  ];
 }
 
 function makeStoryItem(storyData, { timeAgo, openStory }) {
@@ -185,9 +218,14 @@ function makeStoryItem(storyData, { timeAgo, openStory }) {
     render() {
       const el = document.createElement("div");
       el.className = ITEM_CLASS;
+      const mine = user.persistentUserId === state.myPersistentId;
+      const restricted = mine && stories.some((s) => s.visibility === "selected");
       el.append(
-        buildAvatar(user.profilePic, user.username),
-        buildTextBlock(user.username, timeAgo(latestStory.createdAt)),
+        buildAvatar(user.profilePic, user.username, { ring: true }),
+        buildTextBlock(
+          mine ? `${user.username} (${t("you")})` : user.username,
+          restricted ? `${timeAgo(latestStory.createdAt)} · ${t("story_vis_selected")}` : timeAgo(latestStory.createdAt),
+        ),
       );
       el.addEventListener("click", () => openStory(user));
       return el;
@@ -195,7 +233,7 @@ function makeStoryItem(storyData, { timeAgo, openStory }) {
   };
 }
 
-// setting: { label, onClick, iconClass?: "fa-copy", iconSrc?: "https://..." }
+// setting: { label, onClick, subtitle?, toggle?: boolean, danger?: boolean, iconClass?: "fa-copy", iconSrc?: "https://..." }
 function makeSettingItem(setting) {
   return {
     type: "setting",
@@ -203,11 +241,13 @@ function makeSettingItem(setting) {
 
     render() {
       const el = document.createElement("div");
-      el.className = ITEM_CLASS;
+      el.className = `${ITEM_CLASS}${setting.danger ? " pp-item--danger" : ""}`;
+      el.setAttribute("role", typeof setting.toggle === "boolean" ? "switch" : "button");
+      if (typeof setting.toggle === "boolean") el.setAttribute("aria-checked", String(setting.toggle));
+      el.tabIndex = 0;
 
       const iconWrap = document.createElement("div");
-      iconWrap.className =
-        "w-10 h-10 rounded-full bg-accent text-white flex items-center justify-center text-lg shrink-0";
+      iconWrap.className = "pp-item-icon";
       if (setting.iconClass) {
         const icon = document.createElement("i");
         icon.className = `fas ${setting.iconClass}`;
@@ -219,8 +259,21 @@ function makeSettingItem(setting) {
         iconWrap.appendChild(img);
       }
 
-      el.append(iconWrap, buildTextBlock(setting.label));
+      el.append(iconWrap, buildTextBlock(setting.label, setting.subtitle));
+
+      if (typeof setting.toggle === "boolean") {
+        const sw = document.createElement("span");
+        sw.className = `pp-switch${setting.toggle ? " is-on" : ""}`;
+        el.appendChild(sw);
+      }
+
       el.addEventListener("click", setting.onClick);
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          setting.onClick();
+        }
+      });
       return el;
     },
   };
@@ -234,8 +287,7 @@ function makeEmptyItem(message) {
     render() {
       const el = document.createElement("div");
 
-      el.className =
-        "flex items-center justify-center py-10 text-gray-500 dark:text-gray-400 text-sm";
+      el.className = "pp-empty";
 
       el.style.height = "73px";
       el.textContent = message;
@@ -253,8 +305,7 @@ function makeLoadingItem(message) {
     render() {
       const el = document.createElement("div");
 
-      el.className =
-        "flex items-center justify-center py-10 text-gray-500 text-sm";
+      el.className = "pp-empty";
 
       el.textContent = message;
 
@@ -275,18 +326,15 @@ function renderChatsList() {
   const visibleUsers = state.allUsers.filter(
     (u) => u.socketId !== state.myId && !u.hidden,
   );
+  const saved = offlineSavedPeers();
 
-  if (!visibleUsers.length) {
+  if (!visibleUsers.length && !saved.length) {
     window._vcl.setItems([makeEmptyItem(getRandomMessage("renderNotEmpty"))]);
 
     return;
   }
 
-  window._vcl.setItems(
-    visibleUsers.map((u) =>
-      makeChatItem(u, { t, openChat }),
-    ),
-  );
+  window._vcl.setItems(buildChatItems(visibleUsers, saved));
 }
 
 function renderStoriesList() {
@@ -315,64 +363,22 @@ function renderStoriesList() {
   );
 }
 
-function renderSettingsList() {
+function renderSettingsList(keepScroll = false) {
   if (!window._vcl) return;
 
-  const settings = [
-    {
-      iconClass: "fa-copy",
-      label: t("copy_id"),
-      onClick: () => {
-        navigator.clipboard.writeText(state.myId);
-        showToast(t("copied_id"));
-      },
-    },
-
-    {
-      iconClass: "fa-camera",
-      label: t("upload_photo"),
-      onClick: () => document.getElementById("uploadAvatarInput")?.click(),
-    },
-
-    {
-      iconClass: "fa-user-secret",
-      label: state.hiddenFromSearch
-        ? t("hidden_from_search")
-        : t("visible_in_search"),
-
-      onClick: () => toggleSearchVisibility(),
-    },
-
-    {
-      iconClass: "fa-globe",
-      label: t("select_language"),
-      onClick: () => changeLanguage(),
-    },
-
-    {
-      iconClass: "fa-sign-out-alt",
-      label: t("log_out"),
-      onClick: () => logoutUser(),
-    },
-  ];
-
-  window._vcl.setItems(settings.map((s) => makeSettingItem(s)));
+  window._vcl.setItems(getSettingsItems().map((s) => makeSettingItem(s)), keepScroll);
 }
 
-function renderChatSearchResults(users) {
+function renderChatSearchResults(users, savedPeers = []) {
   if (!window._vcl) return;
 
-  if (!users.length) {
+  if (!users.length && !savedPeers.length) {
     window._vcl.setItems([makeEmptyItem(t("no_matching_users"))]);
 
     return;
   }
 
-  window._vcl.setItems(
-    users.map((u) =>
-      makeChatItem(u, { t, openChat }),
-    ),
-  );
+  window._vcl.setItems(buildChatItems(users, savedPeers));
 }
 
 function renderStorySearchResults(stories) {

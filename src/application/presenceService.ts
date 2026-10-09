@@ -30,6 +30,24 @@ export class PresenceService {
     return this.users.get(socketId);
   }
 
+  allOnline(): IterableIterator<OnlineUser> {
+    return this.users.values();
+  }
+
+  /** Sockets that authenticated with one of the given session hashes. */
+  socketsBySession(hashes: ReadonlySet<string>): string[] {
+    const out: string[] = [];
+    for (const user of this.users.values()) if (hashes.has(user.sessionHash)) out.push(user.socketId);
+    return out;
+  }
+
+  /** Session hashes currently attached to a live socket of this account. */
+  onlineSessionHashes(accountId: string): Set<string> {
+    const out = new Set<string>();
+    for (const user of this.users.values()) if (user.accountId === accountId) out.add(user.sessionHash);
+    return out;
+  }
+
   /**
    * Registers a user. If the same account was already online (another tab or
    * a stale socket), the older socket is dropped: last login wins. The caller

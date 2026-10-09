@@ -6,6 +6,7 @@ import type { Logger } from "../../shared/logger.js";
 export interface AuthedAccount {
   accountId: string;
   persistentUserId: string;
+  sessionHash: string;
 }
 
 export interface SocketContext {

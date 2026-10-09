@@ -32,8 +32,9 @@ export function registerAuthHandler(ctx: SocketContext, on: RegisterOn, deps: Ha
       const token = parseSessionToken(payload);
       if (!token) return fail(ERROR_CODES.INVALID_USER_ID, "invalid_token_format");
 
-      const accountId = await deps.sessions.resolve(token);
-      if (!accountId) return fail(ERROR_CODES.SESSION_EXPIRED, "session_not_found");
+      const session = await deps.sessions.resolveDetailed(token);
+      if (!session) return fail(ERROR_CODES.SESSION_EXPIRED, "session_not_found");
+      const { accountId, tokenHash: sessionHash } = session;
 
       const user = await deps.users.findById(accountId);
       if (!user) return fail(ERROR_CODES.USER_NOT_FOUND, "user_not_found");
@@ -56,6 +57,7 @@ export function registerAuthHandler(ctx: SocketContext, on: RegisterOn, deps: Ha
         socketId: socket.id,
         accountId,
         persistentUserId,
+        sessionHash,
         username: user.username,
         profilePic: user.profilePic,
         hidden: user.hidden,
@@ -69,7 +71,7 @@ export function registerAuthHandler(ctx: SocketContext, on: RegisterOn, deps: Ha
         deps.io.sockets.sockets.get(replacedSocketId)?.disconnect(true);
       }
 
-      ctx.account = { accountId, persistentUserId };
+      ctx.account = { accountId, persistentUserId, sessionHash };
       await socket.join(AUTHED_ROOM);
       deps.bruteForce.recordSuccess(ip, "auth");
       deps.audit.log("AUTH_OK", { username: user.username, persistentUserId, ip, socketId: socket.id });
@@ -82,7 +84,7 @@ export function registerAuthHandler(ctx: SocketContext, on: RegisterOn, deps: Ha
         profilePic: user.profilePic,
       });
       socket.emit("online-users", deps.presence.listVisible());
-      socket.emit("stories-updated", deps.stories.feed());
+      socket.emit("stories-updated", deps.stories.feed(persistentUserId));
       deps.broadcaster.presenceChanged();
     } finally {
       ctx.authenticating = false;

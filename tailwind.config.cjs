@@ -10,7 +10,7 @@ module.exports = {
         surface: "#0d0d12",
         surface2: "#13131a",
         border: "#1e1e2e",
-        accent: "#4f6ef7",
+        accent: "#2f6bff",
         accent2: "#7c3aed",
         text: "#e8e8f0",
         muted: "#6b6b80",

@@ -87,3 +87,15 @@ Serve it over HTTPS.
 ## License
 
 GPL-3.0-only. See [LICENSE](LICENSE).
+
+## Yeni özellikler
+
+- **Yerel şifreli geçmiş (isteğe bağlı):** Ayarlar > "Sohbet geçmişini bu cihazda sakla". IndexedDB + AES-GCM; anahtar, anahtar dosyasından HKDF ile türetilir, çıkışta silinir. Kaybolan mesajlar asla kaydedilmez.
+- **Anahtar dosyası parolası:** Ayarlar > "Anahtar dosyasını parolayla koru" (PBKDF2 + AES-GCM, tarayıcıda; sunucu aynı kaldı). Kayıt ekranında da isteğe bağlı.
+- **Oturum yönetimi:** Ayarlar > "Aktif oturumlar" (cihaz etiketi tutulur, IP tutulmaz; hesap başına en fazla 10 oturum).
+- **Hikaye görünürlüğü:** Herkes / seçili kişiler (sunucu yetkisiz kişiye görüntüyü vermez).
+- **Sohbet:** yanıtlama, tepki, düzenleme, silme, okundu bilgisi (kapatılabilir), kaybolan mesajlar, sesli mesaj.
+- **Panik:** Ayarlar veya sohbet menüsü; yerel veriyi siler ve oturumu kapatır.
+- Güvenlik kodu artık sohbet menüsünde ("Güvenlik kodu").
+
+Not: `npm run build:css` çalıştırın. Mikrofon için `Permissions-Policy` değeri `microphone=(self)` yapıldı.

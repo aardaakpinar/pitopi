@@ -45,6 +45,10 @@ export const LIMITS = {
   /** ~5 MB of image bytes once base64 encoded. */
   maxStoryDataChars: 7_000_000,
   maxStoriesPerUser: 5,
+  /** Recipients a "selected people" story may name. */
+  maxStoryAudience: 100,
+  maxSessionsPerAccount: 10,
+  maxDeviceLabelChars: 60,
   maxCaptionChars: 200,
   maxProfilePicChars: 150_000,
   keyFileUploadBytes: 256,

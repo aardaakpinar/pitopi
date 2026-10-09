@@ -68,6 +68,11 @@ export class MemorySessionRepository implements SessionRepository {
   async find(tokenHash: string): Promise<SessionRecord | null> {
     return this.items.get(tokenHash) ?? null;
   }
+  async listByAccount(accountId: string): Promise<Array<{ tokenHash: string; record: SessionRecord }>> {
+    return Array.from(this.items.entries())
+      .filter(([, record]) => record.accountId === accountId)
+      .map(([tokenHash, record]) => ({ tokenHash, record }));
+  }
   async delete(tokenHash: string): Promise<void> {
     this.items.delete(tokenHash);
   }

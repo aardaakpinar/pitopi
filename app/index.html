@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 		<meta name="description" content="Real-Time and Secure Peer to Peer Chat" />
 		<meta property="og:title" content="Pitopi" />
 		<meta property="og:description" content="Real-Time and Secure Peer to Peer Chat" />
@@ -20,177 +20,120 @@
 		<link rel="icon" href="/assets/img/pitopi-512.png" />
 		<link rel="stylesheet" href="assets/style/style.css" />
 		<link rel="manifest" href="/manifest.json" />
-		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-		<meta name="theme-color" content="#060608" media="(prefers-color-scheme: dark)" />
+		<meta name="theme-color" content="#f3f5fa" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#080a11" media="(prefers-color-scheme: dark)" />
 		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 		<meta name="apple-mobile-web-app-title" content="Pitopi" />
 	</head>
-	<body class="bg-light dark:bg-dark text-gray-900 dark:text-gray-100 h-dvh font-sans antialiased">
-		<div class="flex h-dvh overflow-hidden">
-			<!-- Left Sidebar - Menu -->
-			<aside class="w-20 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 flex flex-col items-center py-4 hidden md:flex">
-				<div class="mb-6">
-					<button class="w-12 h-12 rounded-full text-white flex items-center justify-center">
-						<img src="/assets/img/pitopi-512.png" alt="Pitopi" class="w-full h-full" />
-					</button>
-				</div>
-				<nav class="flex flex-col items-center space-y-5 flex-1">
-					<button id="btnChats" data-i18n-aria="chats_tab_label" class="w-12 h-12 rounded-full flex items-center justify-center text-accent hover:bg-gray-200 dark:hover:bg-gray-800">
-						<i class="fas fa-comment-alt text-xl"></i>
-					</button>
-					<button id="btnStorys" data-i18n-aria="aria_stories" class="w-12 h-12 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800">
-						<i class="fas fa-circle-notch text-xl"></i>
-					</button>
+	<body class="pp-app">
+		<div class="pp-shell">
+			<!-- Desktop rail -->
+			<aside class="pp-rail">
+				<img class="pp-rail-logo" src="/assets/img/pitopi-512.png" alt="Pitopi" />
+				<nav class="pp-rail-nav">
+					<button id="btnChats" data-i18n-aria="chats_tab_label" class="pp-rail-btn is-active"><i class="fas fa-comment-alt"></i></button>
+					<button id="btnStorys" data-i18n-aria="aria_stories" class="pp-rail-btn"><i class="fas fa-circle-notch"></i></button>
 				</nav>
-				<div>
-					<button id="btnSettings" data-i18n-aria="settings_tab_label" class="w-12 h-12 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800">
-						<img src="assets/img/boringavatar.svg" alt="" class="w-10 h-10 rounded-full" />
-					</button>
-				</div>
+				<button id="btnSettings" data-i18n-aria="settings_tab_label" class="pp-rail-btn pp-rail-profile"><img src="assets/img/boringavatar.svg" alt="" /></button>
 			</aside>
 
-			<!-- Center Panel - Chats List -->
-			<div id="chats-panel" class="w-full md:w-80 lg:w-96 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 flex flex-col">
-				<!-- Search Bar -->
-				<div class="p-4 border-b border-gray-200 dark:border-gray-800 flex">
-					<div class="search-wrapper items-center relative flex flex-1 w-full flex-nowrap flex-row">
-						<img class="md:hidden w-10 h-10 rounded-full text-white flex items-center justify-center" src="/assets/img/pitopi-512.png" alt="Pitopi" />
-						<div class="relative w-full p-2">
-							<input
-								id="searchId"
-								type="text"
-								data-i18n-aria="search_placeholder"
-								data-i18n-placeholder="search_placeholder"
-								class="w-full pl-4 pr-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent text-base"
-							/>
-							<div class="absolute right-4 top-4 text-gray-400">
-								<i class="fas fa-search"></i>
-							</div>
-						</div>
+			<!-- List panel -->
+			<section id="chats-panel" class="pp-list-panel">
+				<div class="pp-list-head">
+					<div class="pp-brand-mobile"><img src="/assets/img/pitopi-512.png" alt="Pitopi" /></div>
+					<div class="pp-search">
+						<i class="fas fa-search"></i>
+						<input id="searchId" type="text" data-i18n-aria="search_placeholder" data-i18n-placeholder="search_placeholder" />
 					</div>
 				</div>
 
-				<!-- Chat Tabs -->
-				<div id="TabChat" class="flex border-b border-gray-200 dark:border-gray-800">
-					<p data-i18n="chats_tab_label" class="flex-1 py-3 p-5 font-medium"></p>
+				<div id="TabChat" class="pp-tab-title"><p data-i18n="chats_tab_label"></p></div>
+				<div id="TabStory" class="pp-tab-title hidden">
+					<p data-i18n="storys_tab_label"></p>
+					<button id="add-story-btn" data-i18n-aria="aria_add_story" class="pp-icon-btn"><i class="fas fa-circle-plus"></i></button>
+				</div>
+				<div id="TabSetting" class="pp-tab-title hidden"><p data-i18n="settings_tab_label"></p></div>
+
+				<div id="chats-list" class="pp-list"></div>
+
+				<!-- Mobile bottom navigation -->
+				<nav class="pp-bottom-nav">
+					<button id="mobBtnChats" data-i18n-aria="chats_tab_label" class="pp-nav-btn is-active"><i class="fas fa-comment-alt"></i></button>
+					<button id="mobBtnStorys" data-i18n-aria="aria_stories" class="pp-nav-btn"><i class="fas fa-circle-notch"></i></button>
+					<button id="mobBtnSettings" data-i18n-aria="settings_tab_label" class="pp-nav-btn pp-nav-profile"><img src="assets/img/boringavatar.svg" alt="" /></button>
+				</nav>
+			</section>
+
+			<!-- Conversation / story -->
+			<main id="chat-panel" class="pp-chat-panel mobile-chat-closed">
+				<div id="no-chat-placeholder" class="pp-placeholder">
+					<div class="pp-placeholder-icon"><i class="fas fa-lock"></i></div>
+					<h3 data-i18n="select_chat_title"></h3>
+					<p data-i18n="select_chat_description"></p>
 				</div>
 
-				<!-- Story Tabs -->
-				<div id="TabStory" class="hidden flex border-b border-gray-200 dark:border-gray-800">
-					<p data-i18n="storys_tab_label" class="flex-1 py-3 p-5 font-medium"></p>
-					<button id="add-story-btn" data-i18n-aria="aria_add_story" class="flex-1 max-w-20 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800">
-						<i class="fas fa-circle-plus"></i>
-					</button>
-				</div>
-
-				<!-- Settings Tabs -->
-				<div id="TabSetting" class="hidden border-b border-gray-200 dark:border-gray-800">
-					<p data-i18n="settings_tab_label" class="flex-1 py-3 p-5 font-medium"></p>
-				</div>
-
-				<!-- Chats List -->
-				<div id="chats-list" class="flex-1 overflow-y-auto"></div>
-
-				<!-- Mobile Bottom Menu -->
-				<div class="md:hidden flex border-t border-gray-200 dark:border-gray-800">
-					<button id="mobBtnChats" data-i18n-aria="chats_tab_label" class="flex-1 py-3 text-accent hover:bg-gray-200 dark:hover:bg-gray-800">
-						<i class="fas fa-comment-alt"></i>
-					</button>
-					<button id="mobBtnStorys" data-i18n-aria="aria_stories" class="flex-1 py-3 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800">
-						<i class="fas fa-circle-notch"></i>
-					</button>
-					<button id="mobBtnSettings" data-i18n-aria="settings_tab_label" class="flex-1 py-3 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800">
-						<img src="assets/img/boringavatar.svg" alt="" class="w-8 h-8 rounded-full" />
-					</button>
-				</div>
-			</div>
-
-			<!-- Right Panel - Chat Content -->
-			<div
-				id="chat-panel"
-				class="hidden md:flex flex-col flex-1 md:relative fixed inset-0 mobile-chat-closed md:transform-none transition-transform duration-300 ease-in-out bg-secondaryLight dark:bg-secondaryDark"
-			>
-				<!-- No chat selected placeholder (initially visible) -->
-				<div id="no-chat-placeholder" class="flex flex-col items-center justify-center h-full">
-					<div class="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center mb-4">
-						<i class="fas fa-comment-alt text-gray-400 text-2xl"></i>
-					</div>
-					<h3 data-i18n="select_chat_title" class="text-xl font-medium mb-2"></h3>
-					<p data-i18n="select_chat_description" class="text-gray-500 dark:text-gray-400 text-center max-w-md px-4"></p>
-				</div>
-
-				<!-- Story content (initially hidden) -->
-				<div id="story-panel" class="hidden flex-col h-full inset-0 flex flex-col items-center justify-center text-white">
-					<div class="absolute backdrop-blur-[5px] top-0 left-0 w-full px-4 py-3 flex items-center justify-between bg-light dark:bg-dark bg-opacity-50 z-40">
-						<div class="flex items-center gap-2">
-							<img id="story-avatar" alt="" class="w-10 h-10 rounded-full object-cover" />
-							<span id="story-username" class="text-dark dark:text-light text-lg"></span>
+				<div id="story-panel" class="pp-story hidden">
+					<div class="pp-story-head">
+						<div class="pp-story-user">
+							<img id="story-avatar" alt="" />
+							<span id="story-username"></span>
 						</div>
-						<div class="flex gap-2 items-center">
+						<div class="pp-story-tools">
+							<div id="story-visibility" class="pp-badge pp-badge--accent hidden"></div>
 							<div id="story-viewersCount"></div>
-							<button id="delete-story-btn" data-i18n-aria="aria_delete_story" class="hidden text-xl px-2 hover:text-red-400">
-								<i class="fas fa-trash-can text-dark dark:text-light"></i>
-							</button>
+							<button id="delete-story-btn" data-i18n-aria="aria_delete_story" class="pp-icon-btn pp-icon-btn--danger hidden"><i class="fas fa-trash-can"></i></button>
 						</div>
 					</div>
-					<div id="story-progress-container" class="absolute top-16 left-0 w-full h-1 flex gap-1 z-40"></div>
-					<img id="story-image" data-i18n-alt="story_alt" class="max-w-full max-h-full object-contain z-30" />
+					<div id="story-progress-container" class="pp-story-progress"></div>
+					<img id="story-image" data-i18n-alt="story_alt" alt="" />
 				</div>
 
-				<!-- Chat content (initially hidden) -->
-				<div id="chat-content" class="hidden flex-col h-full">
-					<!-- Chat Header -->
-					<div class="flex items-center px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-light dark:bg-dark">
-						<button id="back-to-chats" data-i18n-aria="aria_back" class="mr-3 md:hidden">
-							<i class="fas fa-arrow-left"></i>
-						</button>
-						<div id="chat-avatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white">
-							<i class="fas fa-user"></i>
+				<div id="chat-content" class="pp-chat hidden">
+					<header class="pp-chat-head">
+						<button id="back-to-chats" data-i18n-aria="aria_back" class="pp-icon-btn pp-only-mobile"><i class="fas fa-arrow-left"></i></button>
+						<div id="chat-avatar" class="pp-avatar pp-avatar--sm"><i class="fas fa-user"></i></div>
+						<div class="pp-chat-title">
+							<div id="chat-name" class="pp-chat-name"></div>
+							<div id="chat-status" class="pp-chat-status"></div>
 						</div>
-						<div class="ml-3 flex-1">
-							<div id="chat-name" class="font-medium"></div>
-							<div id="chat-status" class="text-sm text-gray-500 dark:text-gray-400"></div>
-						</div>
-						<div class="flex space-x-3">
-							<button id="chat-menu-btn" data-i18n-aria="aria_chat_options" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800">
-								<i class="fas fa-ellipsis-v"></i>
-							</button>
-						</div>
-					</div>
+						<button id="chat-menu-btn" data-i18n-aria="aria_chat_options" class="pp-icon-btn"><i class="fas fa-ellipsis-v"></i></button>
+					</header>
 
-					<!-- Chat Messages -->
-					<div id="messages-container" class="flex-1 overflow-y-auto p-4 bg-secondaryLight dark:bg-secondaryDark"></div>
+					<div id="messages-container" class="pp-messages"></div>
 
-					<!-- Message Input -->
-					<div class="p-3">
-						<div class="flex items-center">
-							<div class="flex-1 bg-white dark:bg-dark rounded-lg px-4 py-2 flex items-center border border-gray-200 dark:border-gray-800">
-								<input
-									id="message-input"
-									type="text"
-									
-									data-i18n-placeholder="message_input_placeholder"
-									class="flex-1 bg-transparent border-none focus:outline-none text-base"
-								/>
-								<label for="fileInput" data-i18n-aria="aria_attach" class="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 ml-1">
-									<i class="fas fa-paperclip"></i>
-								</label>
+					<div class="pp-composer-wrap">
+						<div id="compose-context" class="pp-context hidden">
+							<span class="pp-context-icon"></span>
+							<div class="pp-context-body">
+								<div class="pp-context-label"></div>
+								<div class="pp-context-text"></div>
 							</div>
-							<button id="send-message" data-i18n-aria="aria_send" class="p-2 ml-2 w-10 h-10 rounded-full bg-accent text-white flex items-center justify-center disabled:opacity-50" disabled>
-								<i class="fas fa-paper-plane"></i>
-							</button>
+							<button id="compose-cancel" type="button" data-i18n-aria="cancel" class="pp-icon-btn"><i class="fas fa-xmark"></i></button>
+						</div>
+
+						<div class="pp-composer">
+							<div id="composer-main" class="pp-composer-main">
+								<input id="message-input" type="text" data-i18n-placeholder="message_input_placeholder" autocomplete="off" />
+								<label for="fileInput" data-i18n-aria="aria_attach" class="pp-icon-btn"><i class="fas fa-paperclip"></i></label>
+								<button id="voice-btn" type="button" data-i18n-aria="aria_voice" class="pp-icon-btn"><i class="fas fa-microphone"></i></button>
+							</div>
+							<div id="voice-bar" class="pp-voice hidden">
+								<span class="pp-rec-dot"></span>
+								<span id="voice-time">0:00</span>
+								<span class="pp-voice-spacer"></span>
+								<button id="voice-cancel" type="button" data-i18n-aria="cancel" class="pp-icon-btn pp-icon-btn--danger"><i class="fas fa-trash-can"></i></button>
+							</div>
+							<button id="voice-send" type="button" data-i18n-aria="aria_send" class="pp-send pp-voice-send hidden"><i class="fas fa-paper-plane"></i></button>
+							<button id="send-message" data-i18n-aria="aria_send" class="pp-send" disabled><i class="fas fa-paper-plane"></i></button>
 						</div>
 					</div>
 				</div>
-			</div>
+			</main>
 		</div>
 
-		<div id="floating-menu" class="absolute right-4 top-20 bg-white dark:bg-dark shadow-lg rounded-md w-48 z-50 hidden">
-			<button id="copy-id-btn" data-i18n="menu_copy_id" class="w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-800 text-md rounded-md"></button>
-			<button id="leave-btn" data-i18n="menu_disconnect" class="w-full text-left px-4 py-2 hover:bg-red-200 dark:hover:bg-red-800 text-md rounded-md hidden"></button>
-		</div>
+		<div id="floating-menu" class="pp-menu hidden"></div>
 
 		<input type="file" id="uploadAvatarInput" accept="image/*" style="display: none" />
 		<input type="file" id="fileInput" style="display: none" />
@@ -203,6 +146,11 @@
 
 		<script src="/socket.io/socket.io.js"></script>
 		<script src="assets/script/i18n.js"></script>
+		<script src="assets/script/keyfile.js"></script>
+		<script src="assets/script/historyStore.js"></script>
+		<script src="assets/script/ui.js"></script>
+		<script src="assets/script/messages.js"></script>
+		<script src="assets/script/features.js"></script>
 		<script src="assets/script/virtualizedChatList.js"></script>
 		<script src="assets/script/app.js"></script>
 	</body>

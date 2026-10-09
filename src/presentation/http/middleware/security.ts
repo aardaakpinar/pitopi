@@ -31,7 +31,7 @@ export function securityHeaders(isProduction: boolean): RequestHandler[] {
   });
 
   const permissions: RequestHandler = (_req, res, next) => {
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(self), geolocation=(), payment=()");
     next();
   };
 

@@ -30,6 +30,7 @@ export interface UserRepository {
 export interface SessionRepository {
   save(tokenHash: string, record: SessionRecord): Promise<void>;
   find(tokenHash: string): Promise<SessionRecord | null>;
+  listByAccount(accountId: string): Promise<Array<{ tokenHash: string; record: SessionRecord }>>;
   delete(tokenHash: string): Promise<void>;
   deleteExpired(now: number, limit: number): Promise<number>;
 }

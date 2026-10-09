@@ -18,7 +18,7 @@ export function registerStoryHandlers(ctx: SocketContext, on: RegisterOn, deps: 
       ctx.account.persistentUserId,
       { username: user.username, profilePic: user.profilePic },
       upload.data,
-      upload.caption,
+      { caption: upload.caption, visibility: upload.visibility, audience: upload.audience },
     );
     if (!view) {
       ack?.({ ok: false, reason: "limit" });
@@ -45,7 +45,8 @@ export function registerStoryHandlers(ctx: SocketContext, on: RegisterOn, deps: 
   // Image bytes are not part of the broadcast feed; clients fetch them on demand.
   on("get-story", { auth: true, bucket: "storyRead" }, (payload, ack) => {
     const ref = parseStoryRef(payload);
-    const data = ref ? stories.getData(ref.persistentUserId, ref.storyId) : null;
+    // Visibility is enforced here too, so a guessed story id never leaks an image.
+    const data = ref && ctx.account ? stories.getData(ref.persistentUserId, ref.storyId, ctx.account.persistentUserId) : null;
     ack?.(data ? { ok: true, data } : { ok: false });
   });
 

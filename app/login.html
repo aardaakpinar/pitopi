@@ -25,9 +25,15 @@
 					<p class="left-lead" id="left-lead" data-i18n="login_left_lead"></p>
 
 					<ul class="info-list">
-						<li class="info-card"><svg class="ok" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="login_info_1"></span></li>
-						<li class="info-card"><svg class="ok" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="login_info_2"></span></li>
-						<li class="info-card"><svg class="ok" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="login_info_3"></span></li>
+						<li class="info-card">
+							<svg class="ok" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg><span data-i18n="login_info_1"></span>
+						</li>
+						<li class="info-card">
+							<svg class="ok" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg><span data-i18n="login_info_2"></span>
+						</li>
+						<li class="info-card">
+							<svg class="ok" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg><span data-i18n="login_info_3"></span>
+						</li>
 					</ul>
 				</div>
 
@@ -43,9 +49,19 @@
 					<!-- Mobile logo -->
 					<div class="mobile-logo">
 						<img src="assets/img/pitopi-512.png" alt="Pitopi" />
-						<div class="mobile-logo-name">Pitopi</div>
-						<div class="mobile-logo-sub" data-i18n="login_mobile_subtitle"></div>
+						<div class="mobile-logo-copy">
+							<div class="mobile-logo-name">Pitopi</div>
+							<div class="mobile-logo-sub" data-i18n="login_mobile_subtitle"></div>
+						</div>
 					</div>
+
+					<section class="mobile-intro" aria-labelledby="mobile-intro-title">
+						<h1 id="mobile-intro-title">
+							<span data-i18n="login_left_title_1"></span>
+							<span class="mobile-intro-accent" data-i18n="login_left_title_2"></span>
+						</h1>
+						<p data-i18n="login_welcome_sub"></p>
+					</section>
 
 					<!-- Desktop heading -->
 					<div class="desktop-heading">
@@ -66,11 +82,16 @@
 
 							<label class="upload-label">
 								<div class="upload-zone" id="upload-zone">
-									<svg class="upload-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/></svg>
+									<svg class="upload-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+										<circle cx="8" cy="15" r="4" />
+										<path d="M11 12l9-9M16 7l3 3" />
+									</svg>
 									<span id="file-label" data-i18n="login_choose_file"></span>
 								</div>
 								<input type="file" id="token-file" accept=".key" hidden />
 							</label>
+
+							<input id="key-password" class="pw-input" type="password" autocomplete="current-password" data-i18n-placeholder="key_password" style="display: none" />
 
 							<button id="login-btn" class="btn-main" data-i18n="login_button" disabled></button>
 							<p id="login-error" class="err-msg"></p>
@@ -80,7 +101,11 @@
 						<div id="signup-panel" class="panel-body" style="display: none">
 							<p class="desc" data-i18n="signup_desc"></p>
 
-							<button id="signup-btn" class="btn-main btn-flush"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg><span data-i18n="signup_download"></span></button>
+							<input id="signup-password" class="pw-input" type="password" autocomplete="new-password" data-i18n-placeholder="signup_password_optional" />
+
+							<button id="signup-btn" class="btn-main btn-flush">
+								<svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14" /></svg><span data-i18n="signup_download"></span>
+							</button>
 
 							<p class="hint" data-i18n="signup_hint"></p>
 						</div>
@@ -89,6 +114,8 @@
 			</main>
 		</div>
 
+		<script src="assets/script/keyfile.js"></script>
+		<script src="assets/script/historyStore.js"></script>
 		<script src="assets/script/login.js"></script>
 	</body>
 </html>

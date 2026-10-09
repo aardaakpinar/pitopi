@@ -40,7 +40,7 @@ export class AuthService {
   }
 
   /** Returns null for any invalid or unknown key (callers must not distinguish). */
-  async loginWithKeyFile(file: Buffer): Promise<LoginResult | null> {
+  async loginWithKeyFile(file: Buffer, device = ""): Promise<LoginResult | null> {
     const parsed = parseKeyFile(file);
     if (!parsed) return null;
 
@@ -57,7 +57,7 @@ export class AuthService {
 
     if (created) await this.tokens.markClaimed(accountId);
 
-    const sessionToken = await this.sessions.create(accountId);
+    const sessionToken = await this.sessions.create(accountId, device);
     return { sessionToken, accountId, user: toPublicUser(user) };
   }
 
