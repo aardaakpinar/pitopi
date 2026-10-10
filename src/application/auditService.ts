@@ -1,6 +1,5 @@
 import crypto from "node:crypto";
 import { AUDIT_LOG_PURGE_BATCH_DAYS, AUDIT_LOG_RETENTION_MS, LIMITS } from "../config/constants.js";
-import type { Pseudonymizer } from "./identity.js";
 import type { AuditLogRepository, Clock } from "./ports.js";
 
 export type AuditEvent =
@@ -30,14 +29,14 @@ function sanitizeValue(value: unknown, depth = 0): unknown {
 /**
  * Fire-and-forget audit trail. Values are length-bounded and stripped of
  * control characters so unauthenticated input cannot bloat storage or forge
- * log lines, IPs are pseudonymised, and writes are capped in flight.
+ * log lines, and writes are capped in flight. IP addresses are stored as
+ * provided for abuse monitoring.
  */
 export class AuditService {
   private inflight = 0;
 
   constructor(
     private readonly repo: AuditLogRepository,
-    private readonly pseudonymizer: Pseudonymizer,
     private readonly now: Clock = Date.now,
   ) {}
 
@@ -47,10 +46,7 @@ export class AuditService {
       return;
     }
 
-    const prepared: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(data)) {
-      prepared[key] = key === "ip" && typeof value === "string" ? this.pseudonymizer.ip(value) : value;
-    }
+    const prepared = { ...data };
 
     this.inflight += 1;
     this.repo

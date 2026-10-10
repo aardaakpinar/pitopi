@@ -34,7 +34,7 @@ Most chat apps start by asking who you are. Pitopi starts from the opposite ques
 - **Input**: every socket payload is validated; images must be real raster data; the frontend never renders untrusted data as HTML; strict CSP, scripts from `self` only.
 - **Abuse limits**: per-IP rate limit and brute-force ban (checked before any expensive work), per-socket event budgets, size limits, per-user story cap.
 - **Web**: Helmet headers, no wildcard CORS, WebSocket origin check, POST-only state changes, and microphone access limited to same-origin pages.
-- **Audit logs**: structured, sanitised and length-bounded; IP addresses are pseudonymised. Firebase Realtime Database audit entries are automatically deleted after 90 days (daily partitions can add up to one extra day). Existing date-partitioned logs are cleaned in batches after deployment; the cleanup cursor is stored under `LOG_META/retentionCursor`.
+- **Audit logs**: sanitised and length-bounded; raw IPs are retained for 90 days.
 
 ## License
 

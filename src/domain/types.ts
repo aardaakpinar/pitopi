@@ -21,6 +21,8 @@ export interface SessionRecord {
   createdAt: number;
   /** Coarse, human-readable device label (e.g. "Chrome on Windows"). No IP is stored. */
   device: string;
+  /** Stable random browser-install identifier used to replace duplicate logins. */
+  deviceId?: string;
 }
 
 /** What a user may see about one of their own sessions. */

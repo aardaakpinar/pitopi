@@ -3,14 +3,14 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<meta name="description" content="Real-Time and Secure Direct Chat" />
+		<meta name="description" content="Real-Time and Secure Relay Chat" />
 		<meta property="og:title" content="Pitopi" />
-		<meta property="og:description" content="Real-Time and Secure Direct Chat" />
+		<meta property="og:description" content="Real-Time and Secure Relay Chat" />
 		<meta property="og:url" content="https://aardaakpinar.github.io/" />
 		<meta property="og:type" content="website" />
-		<meta property="og:image" content="https://aardaakpinar.github.io/images/logos/pitopi.png" />
+		<meta property="og:image" content="assets/pitopi.png" />
 		<title>Pitopi</title>
-		<link rel="icon" href="https://aardaakpinar.github.io/images/logos/pitopi.png" />
+		<link rel="icon" href="assets/pitopi.png" />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
@@ -19,7 +19,7 @@
 	<body>
 		<nav>
 			<a href="index.html" class="nav-logo">
-				<img src="https://aardaakpinar.github.io/images/logos/pitopi.png" alt="Pitopi" />
+				<img src="assets/pitopi.png" alt="Pitopi" />
 				Pitopi
 			</a>
 			<ul class="nav-links">
@@ -28,7 +28,9 @@
 					<a href="https://buymeacoffee.com/aardaakpinar">Donate</a>
 				</li>
 				<li>
-					<a href="https://pitopi.onrender.com/" class="nav-cta">Launch App <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+					<a href="https://pitopi.onrender.com/" class="nav-cta"
+						>Launch App <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" /></svg
+					></a>
 				</li>
 			</ul>
 		</nav>
@@ -36,7 +38,10 @@
 		<!-- HERO -->
 		<section class="hero">
 			<div class="hero-badge">
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z" />
+					<path d="M9 12l2 2 4-4" />
+				</svg>
 				Open source · Encrypted messaging
 			</div>
 
@@ -45,7 +50,7 @@
 				<span class="line2">a feature.</span>
 			</h1>
 
-			<p>Pitopi enables real-time, direct communication. Your messages are relayed by the server as encrypted data, so plaintext stays out of reach.</p>
+			<p>Pitopi enables real-time private chats. Messages are encrypted in your browser before the server relays them, so the server cannot read their contents.</p>
 
 			<div class="hero-actions">
 				<a href="https://pitopi.onrender.com/" class="btn-primary">
@@ -65,7 +70,7 @@
 
 			<div class="stats">
 				<div class="stat">
-					<div class="stat-value">Direct</div>
+					<div class="stat-value">Relayed</div>
 					<div class="stat-label">Architecture</div>
 				</div>
 				<div class="stat">
@@ -86,37 +91,66 @@
 
 				<div class="features-grid">
 					<div class="feature-card">
-						<div class="feature-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div>
+						<div class="feature-icon">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<rect x="4" y="11" width="16" height="10" rx="2" />
+								<path d="M8 11V7a4 4 0 018 0v4" />
+							</svg>
+						</div>
 						<div class="feature-title">End-to-End Encrypted</div>
 						<div class="feature-desc">Messages are encrypted in the browser before they are relayed. The server handles transport, not plaintext chat content.</div>
 					</div>
 
 					<div class="feature-card">
-						<div class="feature-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg></div>
-						<div class="feature-title">Real-Time Direct Chat</div>
+						<div class="feature-icon">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" /></svg>
+						</div>
+						<div class="feature-title">Real-Time Relay Chat</div>
 						<div class="feature-desc">Socket.IO relays encrypted messages between users in real time. Plaintext is not sent through the server.</div>
 					</div>
 
 					<div class="feature-card">
-						<div class="feature-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/></svg></div>
+						<div class="feature-icon">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<circle cx="8" cy="15" r="4" />
+								<path d="M11 12l9-9M16 7l3 3" />
+							</svg>
+						</div>
 						<div class="feature-title">Key-Based Auth</div>
-						<div class="feature-desc">No passwords, no emails, no phone numbers. A cryptographic key file is your identity, and if you lose it we can't recover it for you.</div>
+						<div class="feature-desc">No account password, email, or phone number. Your key file is your identity; an optional password can protect the file locally.</div>
 					</div>
 
 					<div class="feature-card">
-						<div class="feature-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 010 8.4M7.8 16.2a6 6 0 010-8.4M19 5a10 10 0 010 14M5 19A10 10 0 015 5"/></svg></div>
+						<div class="feature-icon">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<circle cx="12" cy="12" r="2" />
+								<path d="M16.2 7.8a6 6 0 010 8.4M7.8 16.2a6 6 0 010-8.4M19 5a10 10 0 010 14M5 19A10 10 0 015 5" />
+							</svg>
+						</div>
 						<div class="feature-title">Story Sharing</div>
-						<div class="feature-desc">Share moments that are cleaned up after 12 hours. Stories are stored temporarily and then removed by cleanup jobs.</div>
+						<div class="feature-desc">Share image stories that expire after 12 hours, with visibility controls for everyone or selected people.</div>
 					</div>
 
 					<div class="feature-card">
-						<div class="feature-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></div>
-						<div class="feature-title">No Ads. Ever.</div>
-						<div class="feature-desc">The current landing experience does not include ads. Privacy is the focus of the product.</div>
+						<div class="feature-icon">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<circle cx="12" cy="12" r="9" />
+								<path d="M5.6 5.6l12.8 12.8" />
+							</svg>
+						</div>
+						<div class="feature-title">Encrypted Local History</div>
+						<div class="feature-desc">Optionally keep chat history on this device, encrypted with a key derived from your key file. Disappearing messages are never stored.</div>
 					</div>
 
 					<div class="feature-card">
-						<div class="feature-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 4-6 3-12 7"/></svg></div>
+						<div class="feature-icon">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<circle cx="6" cy="5" r="2" />
+								<circle cx="6" cy="19" r="2" />
+								<circle cx="18" cy="8" r="2" />
+								<path d="M6 7v10M18 10c0 4-6 3-12 7" />
+							</svg>
+						</div>
 						<div class="feature-title">Open Source</div>
 						<div class="feature-desc">The source code is available in the repository. Audit it, fork it, and improve it.</div>
 					</div>
@@ -136,7 +170,7 @@
 							<div class="step-num">01</div>
 							<div class="step-content">
 								<h4>Download your key</h4>
-								<p>Generate a unique cryptographic key file. This 96-byte file is your entire identity. No sign-up form needed.</p>
+								<p>Generate a unique cryptographic key file. This 101-byte file is your entire identity. No sign-up form needed.</p>
 							</div>
 						</div>
 						<div class="step">
@@ -150,7 +184,7 @@
 							<div class="step-num">03</div>
 							<div class="step-content">
 								<h4>Start a private session</h4>
-								<p>Click a user, complete the Socket.IO handshake, and start exchanging encrypted messages. Direct in the app, with server-side relaying.</p>
+								<p>Click a user, complete the Socket.IO handshake, and start exchanging encrypted messages. Relay in the app, with server-side relaying.</p>
 							</div>
 						</div>
 					</div>
@@ -168,7 +202,9 @@
 			<div>
 				<h2>Start a private<br />conversation.</h2>
 				<p>No account. No email. No phone number. Just download a key and you're in.</p>
-				<a href="https://pitopi.onrender.com/" class="btn-primary" style="font-size: 1rem; padding: 16px 36px"> Open Pitopi <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg> </a>
+				<a href="https://pitopi.onrender.com/" class="btn-primary" style="font-size: 1rem; padding: 16px 36px">
+					Open Pitopi <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+				</a>
 			</div>
 		</section>
 

@@ -24,7 +24,7 @@ export function buildContainer(env: AppEnv, firebase: FirebaseHandles) {
   const users = new FirestoreUserRepository(firebase.firestore);
   const sessionRepo = new FirestoreSessionRepository(firebase.firestore);
 
-  const audit = new AuditService(new RtdbAuditLogRepository(firebase.rtdb), pseudonymizer);
+  const audit = new AuditService(new RtdbAuditLogRepository(firebase.rtdb));
   const sessions = new SessionService(sessionRepo, SESSION_TTL_MS);
   const auth = new AuthService(tokens, users, sessions);
   const tokenCleanup = new TokenCleanupService(tokens);

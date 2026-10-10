@@ -27,15 +27,21 @@ export class SessionService {
     private readonly maxPerAccount: number = LIMITS.maxSessionsPerAccount,
   ) {}
 
-  async create(accountId: string, device = ""): Promise<string> {
+  async create(accountId: string, device = "", deviceId?: string): Promise<string> {
     const token = crypto.randomBytes(32).toString("base64url"); // 43 chars
+    const tokenHash = hashToken(token);
     const created = this.now();
-    await this.repo.save(hashToken(token), {
+    const previous = deviceId
+      ? (await this.repo.listByAccount(accountId)).filter(({ record }) => record.deviceId === deviceId)
+      : [];
+    await this.repo.save(tokenHash, {
       accountId,
       expiresAt: created + this.ttlMs,
       createdAt: created,
       device: device.slice(0, LIMITS.maxDeviceLabelChars),
+      ...(deviceId ? { deviceId } : {}),
     });
+    for (const session of previous) await this.repo.delete(session.tokenHash);
     await this.enforceCap(accountId);
     return token;
   }

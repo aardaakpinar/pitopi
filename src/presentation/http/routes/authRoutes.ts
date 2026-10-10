@@ -21,7 +21,7 @@ export interface AuthRouteDeps {
 // 101-byte key file, so anything bigger is rejected before it is buffered.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: LIMITS.keyFileUploadBytes, files: 1, fields: 0, parts: 2 },
+  limits: { fileSize: LIMITS.keyFileUploadBytes, files: 1, fields: 1, parts: 2 },
 });
 
 export function createAuthRouter(deps: AuthRouteDeps): Router {
@@ -80,7 +80,12 @@ export function createAuthRouter(deps: AuthRouteDeps): Router {
     upload.single("file"),
     async (req, res) => {
       const ip = ipOf(req);
-      const result = req.file ? await deps.auth.loginWithKeyFile(req.file.buffer, deviceLabel(req.headers["user-agent"])) : null;
+      const deviceId = typeof req.body?.deviceId === "string" && /^[a-f0-9]{32}$/.test(req.body.deviceId)
+        ? req.body.deviceId
+        : undefined;
+      const result = req.file
+        ? await deps.auth.loginWithKeyFile(req.file.buffer, deviceLabel(req.headers["user-agent"]), deviceId)
+        : null;
 
       if (!result) {
         deps.bruteForce.recordFailure(ip, "login");

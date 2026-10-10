@@ -9,7 +9,7 @@ export interface AppEnv {
   /** Extra browser origins allowed for sockets/POSTs besides same-origin. */
   allowedOrigins: string[];
   firebaseDatabaseUrl: string;
-  /** Secret used to derive pseudonymous ids and to anonymise IPs in logs. */
+  /** Secret used to derive pseudonymous ids. */
   serverSecret: Buffer;
 }
 

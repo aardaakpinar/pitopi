@@ -15,8 +15,4 @@ export class Pseudonymizer {
   persistentUserId(accountId: string): string {
     return this.hmac("persistent", accountId).slice(0, 32);
   }
-
-  ip(ip: string): string {
-    return this.hmac("ip", ip).slice(0, 16);
-  }
 }

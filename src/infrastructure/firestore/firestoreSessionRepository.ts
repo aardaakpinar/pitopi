@@ -8,11 +8,13 @@ function toRecord(
   snap: { get(field: string): unknown },
 ): SessionRecord {
   const device = snap.get("device");
+  const deviceId = snap.get("deviceId");
   return {
     accountId,
     expiresAt,
     createdAt: Number(snap.get("createdAt")) || 0,
     device: typeof device === "string" ? device : "",
+    ...(typeof deviceId === "string" ? { deviceId } : {}),
   };
 }
 

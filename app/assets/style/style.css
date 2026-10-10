@@ -850,7 +850,8 @@ button:disabled {
 .pp-story-tools {
 	display: flex;
 	align-items: center;
-	gap: 10px;
+	gap: 15px;
+	padding: 0 10px;
 }
 .pp-story-user img {
 	width: 38px;

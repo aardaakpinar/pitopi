@@ -1,25 +1,21 @@
 {
-  "short_name": "Pitopi",
-  "name": "Pitopi",
-  "start_url": "/",
-  "scope": "/",
-  "id": "/",
-  "display": "standalone",
-  "orientation": "portrait",
-
-  "background_color": "#060608",
-  "theme_color": "#060608",
-
-  "description": "Real-Time and Secure Peer to Peer Chat",
-
-  "categories": ["communication", "social", "productivity", "messaging"],
-
-  "icons": [
-    {
-      "src": "/assets/img/pitopi-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ]
+	"short_name": "Pitopi",
+	"name": "Pitopi",
+	"start_url": "/",
+	"scope": "/",
+	"id": "/",
+	"display": "standalone",
+	"orientation": "portrait",
+	"background_color": "#09090b",
+	"theme_color": "#09090b",
+	"description": "Real-Time and Secure Relay Chat",
+	"categories": ["communication", "social", "productivity", "messaging"],
+	"icons": [
+		{
+			"src": "/assets/img/pitopi.png",
+			"sizes": "500x500",
+			"type": "image/png",
+			"purpose": "any maskable"
+		}
+	]
 }

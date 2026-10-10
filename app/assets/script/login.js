@@ -3,6 +3,7 @@
  * so the Content-Security-Policy can forbid inline script execution.
  */
 const SESSION_KEY = "pitopi_session";
+const DEVICE_KEY = "pitopi_device_id";
 const LEGACY_KEY = "pitopi_user_id"; // pre-1.1 bearer id, now meaningless
 
 // Must match KEY_FILE_SIZE on the server: 4-byte magic + 1-byte
@@ -113,6 +114,12 @@ document.getElementById("login-btn").addEventListener("click", async () => {
 	try {
 		const formData = new FormData();
 		formData.append("file", new Blob([rawBytes]), "login.key");
+		let deviceId = localStorage.getItem(DEVICE_KEY);
+		if (!/^[a-f0-9]{32}$/.test(deviceId || "")) {
+			deviceId = Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) => byte.toString(16).padStart(2, "0")).join("");
+			localStorage.setItem(DEVICE_KEY, deviceId);
+		}
+		formData.append("deviceId", deviceId);
 		const res = await fetch("/login", { method: "POST", body: formData });
 		const data = await res.json();
 
