@@ -1,6 +1,7 @@
 import type http from "node:http";
 import { Server } from "socket.io";
 import type { AuditService } from "../../application/auditService.js";
+import type { AuthService } from "../../application/authService.js";
 import type { Pseudonymizer } from "../../application/identity.js";
 import type { UserRepository } from "../../application/ports.js";
 import type { PresenceService } from "../../application/presenceService.js";
@@ -27,6 +28,7 @@ export interface SocketServerDeps {
   presence: PresenceService;
   stories: StoryService;
   sessions: SessionService;
+  auth: AuthService;
   users: UserRepository;
   audit: AuditService;
   pseudonymizer: Pseudonymizer;

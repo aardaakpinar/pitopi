@@ -439,6 +439,50 @@ button:disabled {
 	color: var(--muted);
 	line-height: 1.5;
 }
+.pp-pane {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+.pp-pane-body {
+	flex: 1;
+	width: 100%;
+	max-width: 640px;
+	margin: 0 auto;
+	padding: 16px 18px calc(24px + env(safe-area-inset-bottom));
+	overflow-y: auto;
+}
+.pp-pane-items {
+	margin-bottom: 20px;
+	border: 1px solid var(--line);
+	border-radius: 16px;
+	overflow: hidden;
+}
+.pp-pane-items .pp-item {
+	min-height: 73px;
+	margin: 0;
+	border-radius: 0;
+}
+.pp-section-title {
+	margin: 0 0 4px;
+	font-size: 16px;
+	font-weight: 700;
+}
+.pp-pane-list {
+	margin-bottom: 4px;
+}
+.pp-pane-actions {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 14px;
+}
+.pp-lang-flag {
+	width: 26px;
+	height: 26px;
+	border-radius: 50%;
+	object-fit: cover;
+	flex-shrink: 0;
+}
 .pp-chat {
 	display: flex;
 	flex-direction: column;

@@ -31,6 +31,7 @@ const { io, broadcaster } = createSocketServer(server, {
   presence: c.presence,
   stories: c.stories,
   sessions: c.sessions,
+  auth: c.auth,
   users: c.users,
   audit: c.audit,
   pseudonymizer: c.pseudonymizer,

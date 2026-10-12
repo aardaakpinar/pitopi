@@ -38,6 +38,10 @@ export class MemoryUserRepository implements UserRepository {
   async findById(id: string): Promise<UserRecord | null> {
     return this.items.get(id) ?? null;
   }
+  async findByKeyId(keyId: string): Promise<UserRecord | null> {
+    for (const user of this.items.values()) if (user.keyId === keyId) return user;
+    return null;
+  }
   async createIfAbsent(user: UserRecord): Promise<{ user: UserRecord; created: boolean }> {
     const existing = this.items.get(user.id);
     if (existing) return { user: existing, created: false };
@@ -54,6 +58,10 @@ export class MemoryUserRepository implements UserRepository {
   async updateHidden(id: string, hidden: boolean): Promise<void> {
     const user = this.items.get(id);
     if (user) user.hidden = hidden;
+  }
+  async updateKeyId(id: string, keyId: string): Promise<void> {
+    const user = this.items.get(id);
+    if (user) user.keyId = keyId;
   }
 }
 

@@ -18,11 +18,15 @@ export interface TokenRepository {
 
 export interface UserRepository {
   findById(id: string): Promise<UserRecord | null>;
+  /** Finds the account whose current key (after a rotation) has this hash. */
+  findByKeyId(keyId: string): Promise<UserRecord | null>;
   /** Creates the user unless it already exists; returns the stored record. */
   createIfAbsent(user: UserRecord): Promise<{ user: UserRecord; created: boolean }>;
   exists(id: string): Promise<boolean>;
   updateProfilePic(id: string, profilePic: string | null): Promise<void>;
   updateHidden(id: string, hidden: boolean): Promise<void>;
+  /** Makes `keyId` the only valid key for the account; every earlier key stops working. */
+  updateKeyId(id: string, keyId: string): Promise<void>;
 }
 
 export interface SessionRepository {

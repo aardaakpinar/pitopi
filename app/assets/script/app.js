@@ -696,10 +696,12 @@ async function handleStoryUpload() {
  * 9. View Logic
  */
 function renderChats() {
+	closeSettingsPane();
 	renderChatsList();
 	showOnlyTab(TabChat);
 }
 function renderStorys() {
+	closeSettingsPane();
 	renderStoriesList();
 	showOnlyTab(TabStory);
 }
@@ -1063,6 +1065,7 @@ function openStory(user) {
 	if (!user?.persistentUserId) return;
 
 	closeChat();
+	closeSettingsPane();
 
 	const storyData = state.currentStories[user.persistentUserId];
 	const stories = storyData?.stories?.filter((s) => s.type === "image") || [];
@@ -1190,6 +1193,7 @@ function closeStory() {
  * 14. User Chat Screen
  */
 function prepareChatUI() {
+	closeSettingsPane();
 	if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
 	elements.noChatPlaceholder?.classList.add("hidden");
 
@@ -1247,12 +1251,14 @@ function closeChat() {
 		elements.chatContent.classList.remove("flex");
 	}
 
-	if (elements.chatPanel) {
-		elements.chatPanel.classList.remove("mobile-chat-open");
-		elements.chatPanel.classList.add("mobile-chat-closed");
+	// A settings screen may be showing in the same panel; leave it alone.
+	if (!settingsPaneOpen()) {
+		if (elements.chatPanel) {
+			elements.chatPanel.classList.remove("mobile-chat-open");
+			elements.chatPanel.classList.add("mobile-chat-closed");
+		}
+		elements.noChatPlaceholder?.classList.remove("hidden");
 	}
-
-	elements.noChatPlaceholder?.classList.remove("hidden");
 	Msgs.reset();
 	resetComposerState();
 	elements.chatContent?.classList.remove("pp-readonly");

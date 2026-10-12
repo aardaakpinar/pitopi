@@ -20,19 +20,42 @@ function saveSetting(name, key, value) {
 	localStorage.setItem(key, String(value));
 }
 
-function getSettingsItems() {
+/*
+ * Settings are grouped into categories. The left list shows the categories;
+ * the one picked opens in the chat panel (see openSettingsCategory).
+ */
+function settingsLeafItems() {
+	return {
+		profile: [
+			{ iconClass: "fa-camera", label: t("upload_photo"), onClick: () => document.getElementById("uploadAvatarInput")?.click() },
+			{ iconClass: "fa-globe", label: t("category_language"), subtitle: availableLanguages().find((l) => l.code === getLanguage())?.name, onClick: () => openLanguagePane() },
+		],
+		privacy: [
+			{ iconClass: "fa-user-secret", label: t("setting_hide_profile"), subtitle: t("setting_hide_profile_desc"), toggle: state.hiddenFromSearch, onClick: () => toggleSearchVisibility() },
+			{ iconClass: "fa-clock-rotate-left", label: t("setting_history"), subtitle: t("setting_history_desc"), toggle: state.settings.history, onClick: () => toggleHistory() },
+			{ iconClass: "fa-check-double", label: t("setting_receipts"), subtitle: t("setting_receipts_desc"), toggle: state.settings.receipts, onClick: () => toggleReceipts() },
+			{ iconClass: "fa-eye-slash", label: t("setting_blur"), subtitle: t("setting_blur_desc"), toggle: state.settings.blur, onClick: () => toggleBlur() },
+		],
+		account: [
+			{ iconClass: "fa-laptop", label: t("active_sessions"), onClick: () => openSessionsPane() },
+			{ iconClass: "fa-arrows-rotate", label: t("rotate_key"), onClick: () => showKeyRotation() },
+			{ iconClass: "fa-trash", label: t("panic_wipe"), danger: true, onClick: () => confirmPanic() },
+		],
+	};
+}
+
+function getSettingsCategories() {
 	return [
-		{ iconClass: "fa-camera", label: t("upload_photo"), onClick: () => document.getElementById("uploadAvatarInput")?.click() },
-		{ iconClass: "fa-user-secret", label: state.hiddenFromSearch ? t("hidden_from_search") : t("visible_in_search"), onClick: () => toggleSearchVisibility() },
-		{ iconClass: "fa-clock-rotate-left", label: t("setting_history"), subtitle: t("setting_history_desc"), toggle: state.settings.history, onClick: () => toggleHistory() },
-		{ iconClass: "fa-check-double", label: t("setting_receipts"), subtitle: t("setting_receipts_desc"), toggle: state.settings.receipts, onClick: () => toggleReceipts() },
-		{ iconClass: "fa-eye-slash", label: t("setting_blur"), subtitle: t("setting_blur_desc"), toggle: state.settings.blur, onClick: () => toggleBlur() },
-		{ iconClass: "fa-laptop", label: t("active_sessions"), onClick: () => showSessions() },
-		{ iconClass: "fa-key", label: t("protect_key_file"), onClick: () => showKeyProtection() },
-		{ iconClass: "fa-globe", label: t("select_language"), onClick: () => changeLanguage() },
-		{ iconClass: "fa-trash", label: t("panic_wipe"), danger: true, onClick: () => confirmPanic() },
-		{ iconClass: "fa-sign-out-alt", label: t("log_out"), onClick: () => logoutUser() },
+		{ id: "profile", iconClass: "fa-user", label: t("category_profile") },
+		{ id: "privacy", iconClass: "fa-user-shield", label: t("category_privacy") },
+		{ id: "account", iconClass: "fa-user-gear", label: t("category_account") },
 	];
+}
+
+/** Flat list used by the search box: every single setting. */
+function getSettingsItems() {
+	const leaves = settingsLeafItems();
+	return [...leaves.profile, ...leaves.privacy, ...leaves.account];
 }
 
 function toggleReceipts() {
@@ -386,118 +409,239 @@ function buildChatMenu() {
 	return items;
 }
 
-/* ---------- sessions ---------- */
-function showSessions() {
-	const list = ppEl("div", "pp-list");
+/* ---------- settings pane ---------- */
+// The settings categories stay in the left list; their screens (and the language and
+// sessions sub-screens) open in the chat panel, the same place chats and stories use.
+let settingsPaneView = null;
+
+function settingsPaneOpen() {
+	const pane = document.getElementById("settings-pane");
+	return Boolean(pane) && !pane.classList.contains("hidden");
+}
+
+function renderSettingsPane() {
+	if (!settingsPaneView) return;
+	document.getElementById("settings-pane-title").textContent = t(settingsPaneView.titleKey);
+	const body = document.getElementById("settings-pane-body");
+	body.replaceChildren();
+	settingsPaneView.build(body);
+}
+
+function openSettingsPane(titleKey, build, parent = null) {
+	const pane = document.getElementById("settings-pane");
+	if (!pane) return;
+	if (!settingsPaneOpen()) {
+		closeStory();
+		closeChat();
+	}
+	settingsPaneView = { titleKey, build, parent };
+	renderSettingsPane();
+	elements.noChatPlaceholder?.classList.add("hidden");
+	pane.classList.remove("hidden");
+	elements.chatPanel?.classList.remove("mobile-chat-closed");
+	elements.chatPanel?.classList.add("mobile-chat-open");
+}
+
+function closeSettingsPane() {
+	if (!settingsPaneOpen()) return;
+	settingsPaneView = null;
+	document.getElementById("settings-pane").classList.add("hidden");
+	document.getElementById("settings-pane-body").replaceChildren();
+	elements.chatPanel?.classList.remove("mobile-chat-open");
+	elements.chatPanel?.classList.add("mobile-chat-closed");
+	elements.noChatPlaceholder?.classList.remove("hidden");
+}
+
+// A sub-screen (language, sessions) goes back to its category; a category goes back to the list.
+document.getElementById("settings-pane-back")?.addEventListener("click", () => {
+	const parent = settingsPaneView?.parent;
+	if (parent) openSettingsCategory(parent);
+	else closeSettingsPane();
+});
+
+/* ---------- category screens ---------- */
+function appendSettingRows(body, items) {
+	const box = ppEl("div", "pp-pane-items");
+	for (const item of items) box.appendChild(makeSettingItem(item).render());
+	body.appendChild(box);
+}
+
+function openSettingsCategory(id) {
+	if (!getSettingsCategories().some((c) => c.id === id)) return;
+	openSettingsPane(`category_${id}`, (body) => appendSettingRows(body, settingsLeafItems()[id]));
+}
+
+function openLanguagePane() {
+	openSettingsPane("category_language", buildLanguageBody, "profile");
+}
+
+function openSessionsPane() {
+	openSettingsPane("active_sessions", buildSessionsSection, "account");
+}
+
+function buildLanguageBody(body) {
+	const group = ppEl("div", "pp-choice-group");
+	for (const { code, name } of availableLanguages()) {
+		const btn = ppEl("button", `pp-choice${code === getLanguage() ? " is-selected" : ""}`);
+		btn.type = "button";
+		if (LANGUAGE_ICONS[code]) {
+			const flag = ppEl("img", "pp-lang-flag");
+			flag.src = LANGUAGE_ICONS[code];
+			flag.alt = "";
+			btn.appendChild(flag);
+		}
+		btn.appendChild(ppEl("span", "pp-choice-title", name));
+		// Re-rendering the list also rebuilds this screen in the new language.
+		btn.addEventListener("click", () => {
+			setLanguage(code);
+			renderSettingsList(true);
+		});
+		group.appendChild(btn);
+	}
+	body.appendChild(group);
+}
+
+/** Active sessions, shown at the top of the Account screen. */
+function buildSessionsSection(body) {
+	const list = ppEl("div", "pp-pane-list");
+	const actions = ppEl("div", "pp-pane-actions");
+	body.append(ppEl("p", "pp-modal-text pp-muted", t("sessions_intro")), list, actions);
 	list.appendChild(ppEl("p", "pp-modal-text pp-muted", t("connecting")));
 
-	const render = (sessions) => {
-		list.replaceChildren();
-		for (const s of sessions) {
-			const row = ppEl("div", "pp-list-row");
-			const info = ppEl("div", "pp-list-info");
-			const title = ppEl("div", "pp-list-title", s.device);
-			if (s.current) title.appendChild(ppEl("span", "pp-badge pp-badge--accent", t("session_this")));
-			else if (s.online) title.appendChild(ppEl("span", "pp-badge pp-badge--ok", t("session_online")));
-			info.append(title, ppEl("div", "pp-list-sub", `${t("session_signed_in")}: ${s.createdAt ? new Date(s.createdAt).toLocaleString() : "—"}`));
-			row.appendChild(info);
-			if (!s.current) {
-				const btn = ppButton(t("session_revoke"), "danger");
-				btn.classList.add("pp-btn--sm");
-				btn.addEventListener("click", () => {
-					btn.disabled = true;
-					socket.emit("revoke-session", { id: s.id }, (res) => {
-						showToast(res?.ok ? t("session_revoked") : t("server_error"));
+	const refresh = () =>
+		socket.emit("list-sessions", {}, (res) => {
+			// The screen may have been closed or rebuilt while this was loading.
+			if (!list.isConnected) return;
+			if (!res?.ok || !Array.isArray(res.sessions)) {
+				list.replaceChildren(ppEl("p", "pp-modal-text pp-muted", t("server_error")));
+				return;
+			}
+			list.replaceChildren(...res.sessions.map(sessionRow));
+			actions.replaceChildren();
+			if (res.sessions.some((x) => !x.current)) {
+				const out = ppButton(t("sessions_sign_out_others"), "danger");
+				out.addEventListener("click", () => {
+					out.disabled = true;
+					socket.emit("revoke-other-sessions", {}, (r) => {
+						showToast(r?.ok ? t("sessions_others_done", { n: r.count }) : t("server_error"));
 						refresh();
 					});
 				});
-				row.appendChild(btn);
+				actions.appendChild(out);
 			}
-			list.appendChild(row);
+		});
+
+	const sessionRow = (x) => {
+		const row = ppEl("div", "pp-list-row");
+		const info = ppEl("div", "pp-list-info");
+		const title = ppEl("div", "pp-list-title", x.device);
+		if (x.current) title.appendChild(ppEl("span", "pp-badge pp-badge--accent", t("session_this")));
+		else if (x.online) title.appendChild(ppEl("span", "pp-badge pp-badge--ok", t("session_online")));
+		info.append(title, ppEl("div", "pp-list-sub", `${t("session_signed_in")}: ${x.createdAt ? new Date(x.createdAt).toLocaleString() : "—"}`));
+		row.appendChild(info);
+		if (!x.current) {
+			const btn = ppButton(t("session_revoke"), "danger");
+			btn.classList.add("pp-btn--sm");
+			btn.addEventListener("click", () => {
+				btn.disabled = true;
+				socket.emit("revoke-session", { id: x.id }, (r) => {
+					showToast(r?.ok ? t("session_revoked") : t("server_error"));
+					refresh();
+				});
+			});
+			row.appendChild(btn);
 		}
+		return row;
 	};
 
-	function refresh() {
-		socket.emit("list-sessions", {}, (res) => {
-			if (res?.ok && Array.isArray(res.sessions)) render(res.sessions);
-			else list.replaceChildren(ppEl("p", "pp-modal-text pp-muted", t("server_error")));
-		});
-	}
-
-	ppModal({
-		title: t("active_sessions"),
-		body: [ppEl("p", "pp-modal-text", t("sessions_intro")), list],
-		actions: [
-			{
-				label: t("sessions_sign_out_others"),
-				kind: "danger",
-				keepOpen: true,
-				onClick: () =>
-					new Promise((resolve) => {
-						socket.emit("revoke-other-sessions", {}, (res) => {
-							showToast(res?.ok ? t("sessions_others_done", { n: res.count }) : t("server_error"));
-							refresh();
-							resolve();
-						});
-					}),
-			},
-			{ label: t("close"), kind: "primary" },
-		],
-	});
 	refresh();
 }
 
-/* ---------- key file protection ---------- */
-function showKeyProtection() {
-	if (!globalThis.crypto?.subtle) {
-		showToast(t("secure_context_required"));
-		return;
-	}
-	const picker = buildKeyFilePicker();
-	const fresh = ppField(t("key_new_password"), { type: "password", autocomplete: "new-password" });
-	const again = ppField(t("key_repeat_password"), { type: "password", autocomplete: "new-password" });
-	fresh.wrap.classList.add("hidden");
-	again.wrap.classList.add("hidden");
-	const note = ppEl("p", "pp-modal-text pp-muted hidden", t("key_protect_note"));
+/* ---------- key rotation ---------- */
+function base64ToBytes(b64) {
+	return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+}
 
-	picker.onKind((kind) => {
-		fresh.wrap.classList.toggle("hidden", kind !== "raw");
-		again.wrap.classList.toggle("hidden", kind !== "raw");
-		note.classList.toggle("hidden", kind !== "raw");
-	});
+/** Revokes the current key file: the server issues a new one and the old one stops working. */
+function showKeyRotation() {
+	const fresh = ppField(t("rotate_key_password"), { type: "password", autocomplete: "new-password" });
+	const again = ppField(t("key_repeat_password"), { type: "password", autocomplete: "new-password" });
+	const error = ppEl("p", "pp-error hidden");
+	const fail = (message) => {
+		error.textContent = message;
+		error.classList.remove("hidden");
+		return new Error("rotate_key_aborted");
+	};
 
 	ppModal({
-		title: t("protect_key_file"),
-		body: [ppEl("p", "pp-modal-text", t("key_protect_intro")), ...picker.body, fresh.wrap, again.wrap, note],
+		title: t("rotate_key"),
+		body: [ppEl("p", "pp-modal-text", t("rotate_key_intro")), ppEl("p", "pp-modal-text pp-muted", t("rotate_key_warning")), fresh.wrap, again.wrap, error],
 		actions: [
 			{ label: t("cancel"), kind: "ghost" },
 			{
-				label: t("key_apply"),
-				kind: "primary",
-				icon: "fa-download",
-				onClick: async () => {
-					const kind = picker.kind();
-					if (!picker.hasFile() || kind === "invalid" || kind === null) {
-						picker.showError(t("server_invalid_key"));
-						throw new Error("no_file");
-					}
+				label: t("rotate_key_do"),
+				kind: "danger",
+				icon: "fa-arrows-rotate",
+				keepOpen: true,
+				onClick: async (ctl) => {
+					error.classList.add("hidden");
+					const password = fresh.input.value;
+					if (password && password.length < 8) throw fail(t("key_password_short"));
+					if (password !== again.input.value) throw fail(t("key_password_mismatch"));
+
+					// Everything that can fail on this side is checked BEFORE the server swaps
+					// the key, so a new key is never issued that cannot be saved.
+					const hadHistoryKeys = await HistoryStore.isUnlocked();
+					if ((password || hadHistoryKeys) && !globalThis.crypto?.subtle) throw fail(t("secure_context_required"));
+
+					const res = await new Promise((resolve) => socket.timeout(20000).emit("rotate-key", {}, (err, reply) => resolve(err ? null : reply)));
+					let raw = null;
 					try {
-						const raw = await picker.getRaw();
-						if (kind === "raw") {
-							if (fresh.input.value.length < 8) throw new Error("short_password");
-							if (fresh.input.value !== again.input.value) throw new Error("mismatch");
-							KeyFile.download(await KeyFile.protect(raw, fresh.input.value), `${Date.now()}-protected.key`);
-							showToast(t("key_protected_done"));
-						} else {
-							KeyFile.download(raw, `${Date.now()}.key`);
-							showToast(t("key_unprotected_done"));
-						}
-					} catch (err) {
-						picker.showError(err.message === "short_password" ? t("key_password_short") : err.message === "mismatch" ? t("key_password_mismatch") : keyErrorText(err));
-						throw err;
+						raw = base64ToBytes(res?.key ?? "");
+					} catch {
+						raw = null;
 					}
+					// The current session stays valid either way, so a failed attempt can simply be repeated.
+					if (!res?.ok || !raw || KeyFile.kind(raw) !== "raw") throw fail(t("rotate_key_failed"));
+
+					let file = raw;
+					let name = `${Date.now()}.key`;
+					if (password) {
+						try {
+							file = await KeyFile.protect(raw, password);
+							name = `${Date.now()}-protected.key`;
+						} catch {
+							showToast(t("rotate_key_not_protected"));
+						}
+					}
+					// Hand over the new key first; nothing below may stand between the user and the file.
+					KeyFile.download(file, name);
+
+					if (hadHistoryKeys) {
+						try {
+							await HistoryStore.rekey(await KeyFile.deriveHistoryKeys(raw));
+							refreshSavedPeers();
+						} catch (err) {
+							console.warn("History re-encryption failed:", err);
+							showToast(t("rotate_key_history_failed"));
+						}
+					}
+
+					ctl.close();
+					showKeyRotationDone(file, name);
 				},
 			},
+		],
+	});
+}
+
+function showKeyRotationDone(file, name) {
+	ppModal({
+		title: t("rotate_key_done_title"),
+		body: [ppEl("p", "pp-modal-text", t("rotate_key_done_text"))],
+		actions: [
+			{ label: t("rotate_key_download_again"), kind: "ghost", icon: "fa-download", keepOpen: true, onClick: () => KeyFile.download(file, name) },
+			{ label: t("close"), kind: "primary" },
 		],
 	});
 }

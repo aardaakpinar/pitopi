@@ -366,7 +366,12 @@ function renderStoriesList() {
 function renderSettingsList(keepScroll = false) {
   if (!window._vcl) return;
 
-  window._vcl.setItems(getSettingsItems().map((s) => makeSettingItem(s)), keepScroll);
+  window._vcl.setItems(
+    getSettingsCategories().map((c) => makeSettingItem({ iconClass: c.iconClass, label: c.label, onClick: () => openSettingsCategory(c.id) })),
+    keepScroll,
+  );
+  // Toggles and language changes call this; redraw the open category with the new state.
+  if (typeof renderSettingsPane === "function") renderSettingsPane();
 }
 
 function renderChatSearchResults(users, savedPeers = []) {
@@ -415,18 +420,3 @@ const LANGUAGE_ICONS = {
   en: "https://img.icons8.com/?size=96&id=fIgZUHgwc76e&format=png",
   ru: "https://img.icons8.com/?size=96&id=vioRCshpCBKv&format=png",
 };
-
-function changeLanguage() {
-  if (!window._vcl) return;
-
-  const langs = availableLanguages().map(({ code, name }) => ({
-    iconSrc: LANGUAGE_ICONS[code],
-    label: name,
-    onClick: () => {
-      setLanguage(code);
-      changeLanguage();
-    },
-  }));
-
-  window._vcl.setItems(langs.map((s) => makeSettingItem(s)));
-}

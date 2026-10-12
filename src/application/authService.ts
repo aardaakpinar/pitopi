@@ -44,22 +44,28 @@ export class AuthService {
     const parsed = parseKeyFile(file);
     if (!parsed) return null;
 
-    const accountId = await deriveAccountId(parsed.token, parsed.salt);
-    const existingUser = await this.users.findById(accountId);
+    // Hash of the presented key. For an account that never rotated its key this
+    // is also the account id; after a rotation the two differ.
+    const keyHash = await deriveAccountId(parsed.token, parsed.salt);
+    const direct = await this.users.findById(keyHash);
+    // The account's original key is revoked once a different key took over.
+    if (direct?.keyId && direct.keyId !== keyHash) return null;
+
     let user: UserRecord;
+    const existingUser = direct ?? (await this.users.findByKeyId(keyHash));
     if (existingUser) {
       user = existingUser;
     } else {
-      const registration = await this.tokens.find(accountId);
+      const registration = await this.tokens.find(keyHash);
       if (!registration) return null;
       if (this.now() - registration.createdAt >= UNCLAIMED_TOKEN_TTL_MS) {
-        await this.tokens.delete(accountId);
+        await this.tokens.delete(keyHash);
         return null;
       }
 
       const result = await this.users.createIfAbsent({
-        id: accountId,
-        username: `user_${accountId.slice(0, 8)}`,
+        id: keyHash,
+        username: `user_${keyHash.slice(0, 8)}`,
         createdAt: this.now(),
         profilePic: null,
         hidden: false,
@@ -69,10 +75,27 @@ export class AuthService {
 
     // Registrations are only needed until the first successful login. The
     // user record is sufficient to recognise accounts on later logins.
-    await this.tokens.delete(accountId);
+    await this.tokens.delete(keyHash);
 
-    const sessionToken = await this.sessions.create(accountId, device, deviceId);
-    return { sessionToken, accountId, user: toPublicUser(user) };
+    const sessionToken = await this.sessions.create(user.id, device, deviceId);
+    return { sessionToken, accountId: user.id, user: toPublicUser(user) };
+  }
+
+  /**
+   * Replaces the account's key and returns the new key file. The old key stops
+   * working immediately. The account id stays the same, so the username, the
+   * public id other people know and everything derived from it are unchanged.
+   */
+  async rotateKey(accountId: string): Promise<Buffer> {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { token, salt } = generateKeyMaterial();
+      const keyHash = await deriveAccountId(token, salt);
+      // Practically impossible; only guards against handing out a key that is already in use.
+      if ((await this.users.exists(keyHash)) || (await this.users.findByKeyId(keyHash))) continue;
+      await this.users.updateKeyId(accountId, keyHash);
+      return buildKeyFile(token, salt);
+    }
+    throw new Error("Could not allocate a unique key");
   }
 
   logout(sessionToken: string): Promise<void> {

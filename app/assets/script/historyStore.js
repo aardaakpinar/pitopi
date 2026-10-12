@@ -226,6 +226,54 @@ const HistoryStore = (() => {
 		});
 	}
 
+	/**
+	 * Re-encrypts everything under `newKeys` (used when the key file is rotated:
+	 * the history keys are derived from it, so the old ones no longer apply).
+	 * All records are decrypted in memory first, so a failure while reading
+	 * leaves the stored data untouched. Messages of unknown contacts, which
+	 * could not be listed anyway, are dropped.
+	 */
+	async function rekey(newKeys) {
+		const oldKeys = await loadKeys();
+		const peers = [];
+		const messagesByTag = new Map();
+		if (oldKeys) {
+			for (const record of await wrap((await store("peers")).getAll())) {
+				try {
+					peers.push({ tag: record.tag, ...(await open_(record, `peer:${record.tag}`)) });
+				} catch {
+					// Belongs to another key file.
+				}
+			}
+			for (const record of await wrap((await store("messages")).getAll())) {
+				try {
+					const list = messagesByTag.get(record.peer) ?? [];
+					list.push(await open_(record, record.k));
+					messagesByTag.set(record.peer, list);
+				} catch {
+					// Undecryptable under the current keys: not recoverable.
+				}
+			}
+		}
+
+		const db = await open();
+		const tx = db.transaction(["messages", "peers"], "readwrite");
+		tx.objectStore("messages").clear();
+		tx.objectStore("peers").clear();
+		await new Promise((resolve, reject) => {
+			tx.oncomplete = resolve;
+			tx.onerror = () => reject(tx.error);
+		});
+
+		await saveKeys(newKeys);
+		await serial(async () => {
+			for (const peer of peers) {
+				for (const message of messagesByTag.get(peer.tag) ?? []) await putMessage(peer.id, message);
+				await savePeer(peer.id, peer.username, peer.ts);
+			}
+		});
+	}
+
 	/** Deletes saved messages and contacts but keeps the keys (history stays unlockable). */
 	async function clearData() {
 		const db = await open();
@@ -238,5 +286,5 @@ const HistoryStore = (() => {
 		});
 	}
 
-	return { saveKeys, loadKeys, clearKeys, isUnlocked, saveMessage, updateMessage, deleteMessage, loadMessages, savePeer, listPeers, deletePeer, clearData, wipe };
+	return { saveKeys, loadKeys, clearKeys, isUnlocked, saveMessage, updateMessage, deleteMessage, loadMessages, savePeer, listPeers, deletePeer, clearData, rekey, wipe };
 })();

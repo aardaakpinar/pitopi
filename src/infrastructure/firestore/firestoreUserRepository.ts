@@ -11,6 +11,7 @@ function toRecord(id: string, data: DocumentData): UserRecord {
     createdAt: Number(data.createdAt) || 0,
     profilePic: typeof data.profilePic === "string" ? data.profilePic : null,
     hidden: data.hidden === true,
+    ...(typeof data.keyId === "string" ? { keyId: data.keyId } : {}),
   };
 }
 
@@ -24,6 +25,13 @@ export class FirestoreUserRepository implements UserRepository {
   async findById(id: string): Promise<UserRecord | null> {
     const snap = await this.col.doc(id).get();
     return snap.exists ? toRecord(id, snap.data() ?? {}) : null;
+  }
+
+  async findByKeyId(keyId: string): Promise<UserRecord | null> {
+    // Single-field equality query: served by the automatic index.
+    const snap = await this.col.where("keyId", "==", keyId).limit(1).get();
+    const doc = snap.docs[0];
+    return doc ? toRecord(doc.id, doc.data()) : null;
   }
 
   async createIfAbsent(user: UserRecord): Promise<{ user: UserRecord; created: boolean }> {
@@ -48,5 +56,9 @@ export class FirestoreUserRepository implements UserRepository {
 
   async updateHidden(id: string, hidden: boolean): Promise<void> {
     await this.col.doc(id).update({ hidden });
+  }
+
+  async updateKeyId(id: string, keyId: string): Promise<void> {
+    await this.col.doc(id).update({ keyId });
   }
 }

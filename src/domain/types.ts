@@ -5,6 +5,12 @@ export interface UserRecord {
   createdAt: number;
   profilePic: string | null;
   hidden: boolean;
+  /**
+   * Hash of the key file that currently unlocks this account. Absent until the
+   * key is rotated; then the account id itself is the hash of the original key.
+   * A key whose hash is neither the id (unrotated) nor this value is revoked.
+   */
+  keyId?: string;
 }
 
 /** What a client may learn about its own account. */

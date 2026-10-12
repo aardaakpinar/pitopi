@@ -16,14 +16,15 @@ Most chat apps start by asking who you are. Pitopi starts from the opposite ques
 
 - **Key-file accounts**: sign up downloads a `.key` file; uploading it signs you in. Lose it and the account is gone, there is no recovery by design.
 - **Unclaimed keys**: pending key registrations are deleted after one hour without a first login and removed immediately after that login; cleanup runs every five minutes.
-- **Optional key-file password**: protect the key file with a password using PBKDF2 and AES-GCM in the browser. The server does not handle the password or change how authentication works.
+- **Optional key-file password**: protect the key file with a password using PBKDF2 and AES-GCM in the browser (offered when you renew the key). The server does not handle the password or change how authentication works.
 - **End-to-end encrypted chat**: ECDH (P-256) key exchange, AES-GCM messages. The server relays ciphertext only, and only between two users who accepted a call.
 - **Chat tools**: reply to, react to, edit, and delete messages; use optional read receipts, disappearing messages, and voice messages.
 - **Safety number**: both sides see the same short code derived from their keys, available from the chat menu. Compare it through another channel to rule out a man-in-the-middle.
 - **File sharing**: up to 10 MB, encrypted like messages; image metadata is stripped before sending.
 - **Stories**: image stories that expire after 12 hours (max 5 per user), with view counts and visibility controls for everyone or selected people.
 - **Profile and visibility**: profile picture, and an option to hide yourself from the online list.
-- **Session management**: review and revoke active sessions; each account can have up to 10 sessions. Only a device label is stored, not an IP address.
+- **Session management**: review and revoke active sessions from the Account settings; each account can have up to 10 sessions. Only a device label is stored, not an IP address.
+- **Key rotation**: from Settings you can renew your key. A new key file is issued, the old one stops working immediately and every other session is signed out. The account, username and public id stay the same; local history on this device is re-encrypted under the new key.
 - **Optional local chat history**: keep history on this device in IndexedDB, encrypted with AES-GCM using a key derived from your key file with HKDF. It is deleted on logout; disappearing messages are never stored.
 - **Panic action**: available in Settings and the chat menu to clear local data and sign out.
 - **Languages and UI**: Turkish, English, Russian, Azerbaijani; dark/light theme; installable as a PWA.
