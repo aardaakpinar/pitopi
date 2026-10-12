@@ -837,5 +837,5 @@ async function panicWipe() {
 	} catch {
 		// No Cache API.
 	}
-	window.location.replace("about:blank");
+	window.location.replace("/");
 }
