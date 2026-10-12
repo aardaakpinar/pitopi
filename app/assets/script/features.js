@@ -558,10 +558,6 @@ function buildSessionsSection(body) {
 }
 
 /* ---------- key rotation ---------- */
-function base64ToBytes(b64) {
-	return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-}
-
 /** Revokes the current key file: the server issues a new one and the old one stops working. */
 function showKeyRotation() {
 	const fresh = ppField(t("rotate_key_password"), { type: "password", autocomplete: "new-password" });

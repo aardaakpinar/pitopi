@@ -633,24 +633,35 @@ function handleProfilePictureUpload() {
 
 	const img = new Image();
 	const objectUrl = URL.createObjectURL(file);
+	img.onerror = () => {
+		URL.revokeObjectURL(objectUrl);
+		elements.uploadAvatarInput.value = "";
+		showToast(t("image_file_valid"));
+	};
 	img.onload = () => {
-		const MAX = 256;
-		let { width, height } = img;
-		if (width > height) {
-			height = Math.round((height * MAX) / width);
-			width = MAX;
-		} else {
-			width = Math.round((width * MAX) / height);
-			height = MAX;
+		// Avatars are square. A tall or wide photo is cropped to its centre instead of
+		// being scaled by aspect ratio, which produced thin strips that other people's
+		// clients then had to squeeze into a round avatar.
+		const SIZE = 256;
+		const side = Math.min(img.naturalWidth, img.naturalHeight);
+		if (!side) {
+			img.onerror();
+			return;
 		}
+		const sx = Math.round((img.naturalWidth - side) / 2);
+		const sy = Math.round((img.naturalHeight - side) / 2);
 
 		const canvas = document.createElement("canvas");
-		canvas.width = width;
-		canvas.height = height;
-		canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+		canvas.width = SIZE;
+		canvas.height = SIZE;
+		const ctx = canvas.getContext("2d");
+		ctx.fillStyle = "#fff"; // JPEG has no alpha: transparent PNGs would turn black
+		ctx.fillRect(0, 0, SIZE, SIZE);
+		ctx.drawImage(img, sx, sy, side, side, 0, 0, SIZE, SIZE);
 
-		const base64Image = canvas.toDataURL("image/jpeg", 0.7);
+		const base64Image = canvas.toDataURL("image/jpeg", 0.8);
 		URL.revokeObjectURL(objectUrl);
+		elements.uploadAvatarInput.value = "";
 
 		localStorage.setItem(STORAGE_KEYS.PROFILE_PIC, base64Image);
 		document.querySelector("#btnSettings img").src = base64Image;
