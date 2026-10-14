@@ -382,11 +382,7 @@ function isDataUrl(value) {
 }
 
 function sanitizeFileName(name) {
-	return (
-		String(name || "file")
-			.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_")
-			.slice(0, 128) || "file"
-	);
+	return String(name || "file").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").slice(0, 128) || "file";
 }
 
 function renderFilePreview(fileMeta, from, id = Msgs.newId(), extra = {}) {
@@ -533,7 +529,10 @@ async function deriveSharedKey(remotePublicKey) {
 	if (!state.crypto.localKeyPair) await prepareLocalCrypto();
 	state.crypto.remotePublicKey = remotePublicKey;
 	const importedRemoteKey = await webCrypto.subtle.importKey("raw", base64ToBytes(remotePublicKey), { name: "ECDH", namedCurve: "P-256" }, false, []);
-	state.crypto.sharedKey = await webCrypto.subtle.deriveKey({ name: "ECDH", public: importedRemoteKey }, state.crypto.localKeyPair.privateKey, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+	state.crypto.sharedKey = await webCrypto.subtle.deriveKey({ name: "ECDH", public: importedRemoteKey }, state.crypto.localKeyPair.privateKey, { name: "AES-GCM", length: 256 }, false, [
+		"encrypt",
+		"decrypt",
+	]);
 	if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false;
 }
 
@@ -1594,26 +1593,32 @@ i18nReady.then(() => {
 
 /*
  * Phone back button / back gesture.
- * On mobile the chat panel (chat, story or settings screen) slides over the list. While it is
- * open we keep one history entry, so the system "back" runs the same action as the on-screen
- * arrow instead of leaving the app. Sub-screens (e.g. language) step back to their category.
+ * On mobile the chat panel (chat, story or settings screen) slides over the list. We keep one
+ * history entry per open level (detail = 1, settings sub-screen such as sessions = 2), so the
+ * system "back" runs the same action as the on-screen arrow instead of leaving the app.
+ * Entries are only ever pushed while the user's tap is still being handled (never from inside
+ * popstate): browsers skip history entries created without user activation on back.
  */
 (() => {
 	const mobileQuery = window.matchMedia("(max-width: 768px)");
-	let hasEntry = false;
+	let depth = 0;
 	let ignorePops = 0;
 
-	const detailOpen = () => mobileQuery.matches && Boolean(elements.chatPanel?.classList.contains("mobile-chat-open"));
+	function desiredDepth() {
+		if (!mobileQuery.matches || !elements.chatPanel?.classList.contains("mobile-chat-open")) return 0;
+		return settingsPaneOpen() && settingsPaneView?.parent ? 2 : 1;
+	}
 
 	function syncHistory() {
-		const open = detailOpen();
-		if (open && !hasEntry) {
-			history.pushState({ ppDetail: true }, "");
-			hasEntry = true;
-		} else if (!open && hasEntry) {
-			hasEntry = false;
+		const want = desiredDepth();
+		while (depth < want) {
+			history.pushState({ ppDetail: ++depth }, "");
+		}
+		if (depth > want) {
+			const diff = depth - want;
+			depth = want;
 			ignorePops++;
-			history.back();
+			history.go(-diff);
 		}
 	}
 
@@ -1622,8 +1627,8 @@ i18nReady.then(() => {
 			ignorePops--;
 			return;
 		}
-		if (!hasEntry) return;
-		hasEntry = false;
+		if (depth === 0) return;
+		depth--;
 
 		if (isStoryPlaying) {
 			closeStory();
@@ -1635,10 +1640,14 @@ i18nReady.then(() => {
 			elements.chatPanel?.classList.remove("mobile-chat-open");
 			elements.chatPanel?.classList.add("mobile-chat-closed");
 		}
+		// The UI now matches depth; resync only to fix any drift (this never needs to push).
 		syncHistory();
 	});
 
+	const observer = new MutationObserver(syncHistory);
 	const panel = document.getElementById("chat-panel");
-	if (panel) new MutationObserver(syncHistory).observe(panel, { attributes: true, attributeFilter: ["class"] });
+	if (panel) observer.observe(panel, { attributes: true, attributeFilter: ["class"] });
+	const paneTitle = document.getElementById("settings-pane-title");
+	if (paneTitle) observer.observe(paneTitle, { childList: true, characterData: true, subtree: true });
 	mobileQuery.addEventListener?.("change", syncHistory);
 })();
