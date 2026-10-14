@@ -382,7 +382,11 @@ function isDataUrl(value) {
 }
 
 function sanitizeFileName(name) {
-	return String(name || "file").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").slice(0, 128) || "file";
+	return (
+		String(name || "file")
+			.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_")
+			.slice(0, 128) || "file"
+	);
 }
 
 function renderFilePreview(fileMeta, from, id = Msgs.newId(), extra = {}) {
@@ -529,10 +533,7 @@ async function deriveSharedKey(remotePublicKey) {
 	if (!state.crypto.localKeyPair) await prepareLocalCrypto();
 	state.crypto.remotePublicKey = remotePublicKey;
 	const importedRemoteKey = await webCrypto.subtle.importKey("raw", base64ToBytes(remotePublicKey), { name: "ECDH", namedCurve: "P-256" }, false, []);
-	state.crypto.sharedKey = await webCrypto.subtle.deriveKey({ name: "ECDH", public: importedRemoteKey }, state.crypto.localKeyPair.privateKey, { name: "AES-GCM", length: 256 }, false, [
-		"encrypt",
-		"decrypt",
-	]);
+	state.crypto.sharedKey = await webCrypto.subtle.deriveKey({ name: "ECDH", public: importedRemoteKey }, state.crypto.localKeyPair.privateKey, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
 	if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = false;
 }
 
@@ -1590,3 +1591,54 @@ i18nReady.then(() => {
 	});
 	renderChats();
 });
+
+/*
+ * Phone back button / back gesture.
+ * On mobile the chat panel (chat, story or settings screen) slides over the list. While it is
+ * open we keep one history entry, so the system "back" runs the same action as the on-screen
+ * arrow instead of leaving the app. Sub-screens (e.g. language) step back to their category.
+ */
+(() => {
+	const mobileQuery = window.matchMedia("(max-width: 768px)");
+	let hasEntry = false;
+	let ignorePops = 0;
+
+	const detailOpen = () => mobileQuery.matches && Boolean(elements.chatPanel?.classList.contains("mobile-chat-open"));
+
+	function syncHistory() {
+		const open = detailOpen();
+		if (open && !hasEntry) {
+			history.pushState({ ppDetail: true }, "");
+			hasEntry = true;
+		} else if (!open && hasEntry) {
+			hasEntry = false;
+			ignorePops++;
+			history.back();
+		}
+	}
+
+	window.addEventListener("popstate", () => {
+		if (ignorePops > 0) {
+			ignorePops--;
+			return;
+		}
+		if (!hasEntry) return;
+		hasEntry = false;
+
+		if (isStoryPlaying) {
+			closeStory();
+		} else if (settingsPaneOpen()) {
+			const parent = settingsPaneView?.parent;
+			if (parent) openSettingsCategory(parent);
+			else closeSettingsPane();
+		} else {
+			elements.chatPanel?.classList.remove("mobile-chat-open");
+			elements.chatPanel?.classList.add("mobile-chat-closed");
+		}
+		syncHistory();
+	});
+
+	const panel = document.getElementById("chat-panel");
+	if (panel) new MutationObserver(syncHistory).observe(panel, { attributes: true, attributeFilter: ["class"] });
+	mobileQuery.addEventListener?.("change", syncHistory);
+})();
