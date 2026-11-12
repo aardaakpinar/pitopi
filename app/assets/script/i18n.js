@@ -9,14 +9,13 @@
  *          data-i18n-vars='{"n":1}'    -> interpolation values for data-i18n
  * Code:    t("key", { name: "value" })  /  tList("key")  /  setLanguage("tr")
  */
-const LANG_STORAGE_KEY = "p2p_current_lang";
 const DEFAULT_LANG = "en";
 
 let translations = {};
 let currentLang = DEFAULT_LANG;
 
 function detectLanguage() {
-	const stored = localStorage.getItem(LANG_STORAGE_KEY);
+	const stored = SettingsStore.read().language;
 	if (stored && translations[stored]) return stored;
 	const browser = (navigator.language || "").slice(0, 2).toLowerCase();
 	return translations[browser] ? browser : DEFAULT_LANG;
@@ -52,7 +51,7 @@ function getLanguage() {
 function setLanguage(code) {
 	if (!translations[code]) return;
 	currentLang = code;
-	localStorage.setItem(LANG_STORAGE_KEY, code);
+	SettingsStore.update({ language: code });
 	document.documentElement.lang = code;
 	translatePage();
 }

@@ -1,18 +1,6 @@
 /*
  * 1. Configuration Constants
  */
-const STORAGE_KEYS = {
-	SESSION: "pitopi_session",
-	LEGACY_USER_ID: "pitopi_user_id",
-	PROFILE_PIC: "p2p_pp_base64",
-	HIDDEN: "p2p_hidden",
-	REMOTE_ID: "p2p_remote_id",
-	CONNECTION_STATUS: "p2p_connection_status",
-	HISTORY: "pp_history",
-	RECEIPTS: "pp_receipts",
-	BLUR: "pp_blur",
-};
-
 const CONNECTION_STATES = {
 	CONNECTED: "connected",
 	CONNECTING: "connecting",
@@ -38,8 +26,7 @@ const ALLOWED_UPLOAD_IMAGES = ["image/png", "image/jpeg", "image/webp", "image/g
 /*
  * 2. Session Setup and Socket Init
  */
-localStorage.removeItem(STORAGE_KEYS.LEGACY_USER_ID);
-const sessionToken = localStorage.getItem(STORAGE_KEYS.SESSION);
+const sessionToken = AppStorage.local.get(StorageKeys.session);
 if (!sessionToken) window.location.href = "login.html";
 
 // Same-origin connection; the client script itself is served by the server
@@ -52,13 +39,12 @@ const socket = io({ transports: ["websocket"] });
 const state = {
 	isDisconnecting: false,
 	connectionStatus: false,
-	remoteId: sessionStorage.getItem(STORAGE_KEYS.REMOTE_ID) || null,
+	remoteId: AppStorage.session.get(StorageKeys.remotePeer) || null,
 	myId: null,
 	myPersistentId: null,
 	myUsername: null,
 	myProfilePic: null,
 	allUsers: [],
-	hiddenFromSearch: localStorage.getItem(STORAGE_KEYS.HIDDEN) === "true",
 	currentStories: {},
 	currentStoryIndex: 0,
 	currentUserStories: [],
@@ -71,7 +57,7 @@ const state = {
 	messages: {},
 	isConnected: null,
 	socketChatTimer: null,
-	settings: loadSettings(),
+	settings: SettingsStore.read(),
 	// Contacts with saved (encrypted, local) history; refreshed from HistoryStore.
 	savedPeers: [],
 	// Composer context: { id, text } for a reply, or the message being edited.
@@ -663,7 +649,6 @@ function handleProfilePictureUpload() {
 		URL.revokeObjectURL(objectUrl);
 		elements.uploadAvatarInput.value = "";
 
-		localStorage.setItem(STORAGE_KEYS.PROFILE_PIC, base64Image);
 		document.querySelector("#btnSettings img").src = base64Image;
 		document.querySelector("#mobBtnSettings img").src = base64Image;
 		showToast(t("pp_update"));
@@ -1013,7 +998,7 @@ async function startCall(id) {
 
 	try {
 		state.remoteId = id;
-		sessionStorage.setItem(STORAGE_KEYS.REMOTE_ID, id);
+		AppStorage.session.set(StorageKeys.remotePeer, id);
 
 		const cryptoPublicKey = await prepareLocalCrypto();
 		updateStatus(CONNECTION_STATES.CONNECTING);
@@ -1055,8 +1040,7 @@ function handleChatDisconnect(useRelayFallback = true) {
 	state.selectedUser = null;
 	resetSessionCrypto();
 
-	sessionStorage.removeItem(STORAGE_KEYS.REMOTE_ID);
-	localStorage.removeItem(STORAGE_KEYS.CONNECTION_STATUS);
+	AppStorage.session.remove(StorageKeys.remotePeer);
 	clearSocketChatTimer();
 
 	if (elements.sendMessageBtn) elements.sendMessageBtn.disabled = true;
@@ -1405,20 +1389,20 @@ socket.on("auth_failed", (payload) => {
 	// Only a rejected/expired credential should force a new login; a transient
 	// condition (rate limit, server busy) must not destroy a valid session.
 	if (code !== "rate_limited" && code !== "busy" && code !== "auth_error") {
-		localStorage.removeItem(STORAGE_KEYS.SESSION);
+		AppStorage.local.remove(StorageKeys.session);
 	}
 	window.location.href = "login.html";
 });
 
 socket.on("nickname-restricted", () => {
 	alert(t("nickname_restricted"));
-	localStorage.removeItem(STORAGE_KEYS.SESSION);
+	AppStorage.local.remove(StorageKeys.session);
 	window.location.href = "login.html";
 });
 
 socket.on("nickname-taken", () => {
 	alert(t("nickname_taken"));
-	localStorage.removeItem(STORAGE_KEYS.SESSION);
+	AppStorage.local.remove(StorageKeys.session);
 	window.location.href = "login.html";
 });
 
@@ -1490,7 +1474,7 @@ socket.on("incoming-call", async ({ from, cryptoPublicKey }) => {
 		});
 
 		state.connectionStatus = true;
-		sessionStorage.setItem(STORAGE_KEYS.REMOTE_ID, from);
+		AppStorage.session.set(StorageKeys.remotePeer, from);
 		activateEncryptedRelay();
 	} catch (error) {
 		console.error("Error handling incoming call:", error);
@@ -1525,7 +1509,7 @@ socket.on("relay-message", async ({ from, envelope }) => {
 socket.on("call-rejected", ({ reason } = {}) => {
 	updateStatus(CONNECTION_STATES.REJECTED);
 	showToast(t("busy"));
-	sessionStorage.removeItem(STORAGE_KEYS.REMOTE_ID);
+	AppStorage.session.remove(StorageKeys.remotePeer);
 	clearSocketChatTimer();
 	resetSessionCrypto();
 	state.connectionStatus = false;
@@ -1537,8 +1521,8 @@ socket.on("call-rejected", ({ reason } = {}) => {
  * 17. Settings Functions
  */
 async function logoutUser() {
-	const token = localStorage.getItem(STORAGE_KEYS.SESSION);
-	localStorage.removeItem(STORAGE_KEYS.SESSION);
+	const token = AppStorage.local.get(StorageKeys.session);
+	AppStorage.local.remove(StorageKeys.session);
 	// Removing the keys locks the saved history until the key file is used again.
 	await HistoryStore.clearKeys();
 	try {
@@ -1550,10 +1534,10 @@ async function logoutUser() {
 }
 
 function toggleSearchVisibility() {
-	state.hiddenFromSearch = !state.hiddenFromSearch;
-	localStorage.setItem(STORAGE_KEYS.HIDDEN, state.hiddenFromSearch);
-	showToast(state.hiddenFromSearch ? t("hidden_from_search") : t("visible_in_search"));
-	socket.emit("update-visibility", { hidden: state.hiddenFromSearch });
+	const hidden = !state.settings.hiddenFromSearch;
+	state.settings = SettingsStore.update({ hiddenFromSearch: hidden });
+	showToast(hidden ? t("hidden_from_search") : t("visible_in_search"));
+	socket.emit("update-visibility", { hidden });
 	renderSettingsList(true);
 }
 
@@ -1563,8 +1547,7 @@ function toggleSearchVisibility() {
 document.addEventListener("DOMContentLoaded", () => {
 	initStoryFunctionality();
 	initProfilePictureUpload();
-	sessionStorage.removeItem(STORAGE_KEYS.REMOTE_ID);
-	localStorage.removeItem(STORAGE_KEYS.CONNECTION_STATUS);
+	AppStorage.session.remove(StorageKeys.remotePeer);
 	if (elements.noChatPlaceholder) elements.noChatPlaceholder.classList.remove("hidden");
 	if (elements.chatContent) elements.chatContent.classList.add("hidden");
 });

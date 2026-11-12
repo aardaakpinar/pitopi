@@ -1,5 +1,5 @@
-const CACHE_NAME = "pitopi-v10";
-const urlsToCache = ["/", "/index.html", "/login.html", "/manifest.json", "/assets/style/tailwind.css", "/assets/style/style.css", "/assets/style/login.css", "/assets/img/boringavatar.svg", "/assets/img/pitopi.png", "/assets/script/i18n.js", "/assets/script/login.js", "/assets/script/theme.js", "/assets/config/translations.json"];
+const CACHE_NAME = "pitopi-v11";
+const urlsToCache = ["/", "/index.html", "/login.html", "/manifest.json", "/assets/style/tailwind.css", "/assets/style/style.css", "/assets/style/login.css", "/assets/img/boringavatar.svg", "/assets/img/pitopi.png", "/assets/script/storage.js", "/assets/script/i18n.js", "/assets/script/login.js", "/assets/script/theme.js", "/assets/config/translations.json"];
 
 self.addEventListener("install", (event) => {
 	event.waitUntil(

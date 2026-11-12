@@ -3,21 +3,12 @@
  * protection, session management, story audience, voice messages, panic wipe.
  *
  * Loaded before app.js. Only function declarations live at the top level; they
- * use app.js globals (state, socket, STORAGE_KEYS, ...) at call time.
+ * use app.js globals (state, socket, StorageKeys, ...) at call time.
  */
 
 /* ---------- settings ---------- */
-function loadSettings() {
-	return {
-		history: localStorage.getItem(STORAGE_KEYS.HISTORY) === "true",
-		receipts: localStorage.getItem(STORAGE_KEYS.RECEIPTS) !== "false",
-		blur: localStorage.getItem(STORAGE_KEYS.BLUR) === "true",
-	};
-}
-
-function saveSetting(name, key, value) {
-	state.settings[name] = value;
-	localStorage.setItem(key, String(value));
+function saveSetting(name, value) {
+	state.settings = SettingsStore.update({ [name]: value });
 }
 
 /*
@@ -27,19 +18,20 @@ function saveSetting(name, key, value) {
 function settingsLeafItems() {
 	return {
 		profile: [
-			{ iconClass: "fa-camera", label: t("upload_photo"), onClick: () => document.getElementById("uploadAvatarInput")?.click() },
-			{ iconClass: "fa-globe", label: t("category_language"), subtitle: availableLanguages().find((l) => l.code === getLanguage())?.name, onClick: () => openLanguagePane() },
+			{ iconClass: "fa-camera", label: t("upload_photo"), subtitle: t("upload_photo_desc"), onClick: () => document.getElementById("uploadAvatarInput")?.click() },
+			{ iconClass: "fa-globe", label: t("category_language"), subtitle: `${t("category_language_desc")} · ${availableLanguages().find((l) => l.code === getLanguage())?.name}`, onClick: () => openLanguagePane() },
 		],
 		privacy: [
-			{ iconClass: "fa-user-secret", label: t("setting_hide_profile"), subtitle: t("setting_hide_profile_desc"), toggle: state.hiddenFromSearch, onClick: () => toggleSearchVisibility() },
+			{ iconClass: "fa-user-secret", label: t("setting_hide_profile"), subtitle: t("setting_hide_profile_desc"), toggle: state.settings.hiddenFromSearch, onClick: () => toggleSearchVisibility() },
 			{ iconClass: "fa-clock-rotate-left", label: t("setting_history"), subtitle: t("setting_history_desc"), toggle: state.settings.history, onClick: () => toggleHistory() },
 			{ iconClass: "fa-check-double", label: t("setting_receipts"), subtitle: t("setting_receipts_desc"), toggle: state.settings.receipts, onClick: () => toggleReceipts() },
 			{ iconClass: "fa-eye-slash", label: t("setting_blur"), subtitle: t("setting_blur_desc"), toggle: state.settings.blur, onClick: () => toggleBlur() },
 		],
 		account: [
-			{ iconClass: "fa-laptop", label: t("active_sessions"), onClick: () => openSessionsPane() },
-			{ iconClass: "fa-arrows-rotate", label: t("rotate_key"), onClick: () => showKeyRotation() },
-			{ iconClass: "fa-trash", label: t("panic_wipe"), danger: true, onClick: () => confirmPanic() },
+			{ iconClass: "fa-laptop", label: t("active_sessions"), subtitle: t("active_sessions_desc"), onClick: () => openSessionsPane() },
+			{ iconClass: "fa-arrows-rotate", label: t("rotate_key"), subtitle: t("rotate_key_desc"), onClick: () => showKeyRotation() },
+			{ iconClass: "fa-arrow-right-from-bracket", label: t("log_out"), subtitle: t("log_out_desc"), danger: true, onClick: () => confirmLogout() },
+			{ iconClass: "fa-trash", label: t("panic_wipe"), subtitle: t("panic_wipe_desc"), danger: true, onClick: () => confirmPanic() },
 		],
 	};
 }
@@ -58,8 +50,20 @@ function getSettingsItems() {
 	return [...leaves.profile, ...leaves.privacy, ...leaves.account];
 }
 
+/** Signing out clears the local session, so ask before doing it. */
+function confirmLogout() {
+	ppConfirm({
+		title: t("log_out"),
+		message: t("log_out_confirm"),
+		confirmLabel: t("log_out"),
+		danger: true,
+	}).then((confirmed) => {
+		if (confirmed) logoutUser();
+	});
+}
+
 function toggleReceipts() {
-	saveSetting("receipts", STORAGE_KEYS.RECEIPTS, !state.settings.receipts);
+	saveSetting("receipts", !state.settings.receipts);
 	renderSettingsList(true);
 }
 
@@ -69,7 +73,7 @@ function applyBlurSetting() {
 }
 
 function toggleBlur() {
-	saveSetting("blur", STORAGE_KEYS.BLUR, !state.settings.blur);
+	saveSetting("blur", !state.settings.blur);
 	applyBlurSetting();
 	renderSettingsList(true);
 }
@@ -149,7 +153,7 @@ async function toggleHistory() {
 					label: t("history_off_keep"),
 					kind: "ghost",
 					onClick: () => {
-						saveSetting("history", STORAGE_KEYS.HISTORY, false);
+						saveSetting("history", false);
 						refreshSavedPeers();
 						renderSettingsList(true);
 					},
@@ -159,7 +163,7 @@ async function toggleHistory() {
 					kind: "danger",
 					onClick: async () => {
 						await HistoryStore.clearData();
-						saveSetting("history", STORAGE_KEYS.HISTORY, false);
+						saveSetting("history", false);
 						refreshSavedPeers();
 						renderSettingsList(true);
 						showToast(t("history_deleted"));
@@ -171,7 +175,7 @@ async function toggleHistory() {
 	}
 
 	if (await HistoryStore.isUnlocked()) {
-		saveSetting("history", STORAGE_KEYS.HISTORY, true);
+		saveSetting("history", true);
 		refreshSavedPeers();
 		renderSettingsList(true);
 		showToast(t("history_enabled"));
@@ -201,7 +205,7 @@ async function toggleHistory() {
 						picker.showError(keyErrorText(err));
 						throw err;
 					}
-					saveSetting("history", STORAGE_KEYS.HISTORY, true);
+					saveSetting("history", true);
 					refreshSavedPeers();
 					renderSettingsList(true);
 					showToast(t("history_enabled"));
@@ -816,7 +820,7 @@ function confirmPanic() {
 
 /** Wipes everything this browser knows and leaves the app. No undo. */
 async function panicWipe() {
-	const token = localStorage.getItem(STORAGE_KEYS.SESSION);
+	const token = AppStorage.local.get(StorageKeys.session);
 	try {
 		socket.disconnect();
 	} catch {
@@ -830,8 +834,8 @@ async function panicWipe() {
 	} catch {
 		// Best effort.
 	}
-	localStorage.clear();
-	sessionStorage.clear();
+	AppStorage.local.clear();
+	AppStorage.session.clear();
 	try {
 		await Promise.all((await caches.keys()).map((name) => caches.delete(name)));
 	} catch {

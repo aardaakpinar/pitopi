@@ -12,7 +12,7 @@
 		<title>Pitopi</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" />
 		<link rel="stylesheet" href="assets/style/tailwind.css" />
 		<script src="assets/script/theme.js"></script>
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -22,8 +22,8 @@
 		<link rel="icon" href="/assets/img/pitopi.png" type="image/png" sizes="16x16" />
 		<link rel="stylesheet" href="assets/style/style.css" />
 		<link rel="manifest" href="/manifest.json" />
-		<meta name="theme-color" content="#f4f4f5" media="(prefers-color-scheme: light)" />
-		<meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)" />
+		<meta name="theme-color" content="#eff0f1" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#0d0f12" media="(prefers-color-scheme: dark)" />
 		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -71,9 +71,7 @@
 			<!-- Conversation / story -->
 			<main id="chat-panel" class="pp-chat-panel mobile-chat-closed">
 				<div id="no-chat-placeholder" class="pp-placeholder">
-					<div class="pp-placeholder-icon"><i class="fas fa-lock"></i></div>
 					<h3 data-i18n="select_chat_title"></h3>
-					<p data-i18n="select_chat_description"></p>
 				</div>
 
 				<div id="settings-pane" class="pp-pane hidden">
@@ -155,6 +153,7 @@
 		</audio>
 
 		<script src="/socket.io/socket.io.js"></script>
+		<script src="assets/script/storage.js"></script>
 		<script src="assets/script/i18n.js"></script>
 		<script src="assets/script/keyfile.js"></script>
 		<script src="assets/script/historyStore.js"></script>

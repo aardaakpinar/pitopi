@@ -2,18 +2,12 @@
  * Login / signup page logic. Kept in an external file (no inline <script>)
  * so the Content-Security-Policy can forbid inline script execution.
  */
-const SESSION_KEY = "pitopi_session";
-const DEVICE_KEY = "pitopi_device_id";
-const LEGACY_KEY = "pitopi_user_id"; // pre-1.1 bearer id, now meaningless
 
 // Must match KEY_FILE_SIZE on the server: 4-byte magic + 1-byte
 // version + 64-byte token + 32-byte salt.
 const EXPECTED_KEY_FILE_SIZE = 101;
 
-localStorage.removeItem(LEGACY_KEY);
-document.getElementById("left-lead").dataset.i18nVars = JSON.stringify({ size: EXPECTED_KEY_FILE_SIZE });
-
-if (localStorage.getItem(SESSION_KEY)) {
+if (AppStorage.local.get(StorageKeys.session)) {
 	window.location.href = "/";
 }
 
@@ -41,22 +35,38 @@ function switchTab(tab) {
 	const signupPanel = document.getElementById("signup-panel");
 	const loginBtn = document.getElementById("tab-login");
 	const signupBtn = document.getElementById("tab-signup");
+	const isLogin = tab === "login";
 
-	if (tab === "login") {
-		loginPanel.style.display = "block";
-		signupPanel.style.display = "none";
-		loginBtn.className = "tab-btn active";
-		signupBtn.className = "tab-btn inactive";
-	} else {
-		loginPanel.style.display = "none";
-		signupPanel.style.display = "block";
-		signupBtn.className = "tab-btn active";
-		loginBtn.className = "tab-btn inactive";
-	}
+	loginPanel.style.display = isLogin ? "block" : "none";
+	signupPanel.style.display = isLogin ? "none" : "block";
+	loginBtn.className = isLogin ? "tab-btn active" : "tab-btn inactive";
+	signupBtn.className = isLogin ? "tab-btn inactive" : "tab-btn active";
+	loginBtn.setAttribute("aria-selected", String(isLogin));
+	signupBtn.setAttribute("aria-selected", String(!isLogin));
+	loginBtn.tabIndex = isLogin ? 0 : -1;
+	signupBtn.tabIndex = isLogin ? -1 : 0;
 }
 
 // Tab buttons (previously inline onclick="switchTab(...)")
 document.querySelectorAll("[data-tab]").forEach((el) => el.addEventListener("click", () => switchTab(el.dataset.tab)));
+
+// Arrow keys move between the two tabs, as expected of a tab list.
+document.querySelector(".tab-row")?.addEventListener("keydown", (e) => {
+	if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+	e.preventDefault();
+	const next = e.target.dataset.tab === "login" ? "signup" : "login";
+	switchTab(next);
+	document.querySelector(`[data-tab="${next}"]`)?.focus();
+});
+
+// The hidden file input is not focusable, so the drop zone behaves like a button.
+const uploadZone = document.getElementById("upload-zone");
+uploadZone?.addEventListener("click", () => document.getElementById("token-file").click());
+uploadZone?.addEventListener("keydown", (e) => {
+	if (e.key !== "Enter" && e.key !== " ") return;
+	e.preventDefault();
+	document.getElementById("token-file").click();
+});
 
 document.getElementById("token-file").addEventListener("change", async function () {
 	const file = this.files[0];
@@ -114,10 +124,10 @@ document.getElementById("login-btn").addEventListener("click", async () => {
 	try {
 		const formData = new FormData();
 		formData.append("file", new Blob([rawBytes]), "login.key");
-		let deviceId = localStorage.getItem(DEVICE_KEY);
+		let deviceId = AppStorage.local.get(StorageKeys.deviceId);
 		if (!/^[a-f0-9]{32}$/.test(deviceId || "")) {
 			deviceId = Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) => byte.toString(16).padStart(2, "0")).join("");
-			localStorage.setItem(DEVICE_KEY, deviceId);
+			AppStorage.local.set(StorageKeys.deviceId, deviceId);
 		}
 		formData.append("deviceId", deviceId);
 		const res = await fetch("/login", { method: "POST", body: formData });
@@ -139,7 +149,7 @@ document.getElementById("login-btn").addEventListener("click", async () => {
 			console.warn("History keys unavailable:", err);
 		}
 
-		localStorage.setItem(SESSION_KEY, data.sessionToken);
+		AppStorage.local.set(StorageKeys.session, data.sessionToken);
 		window.location.href = "/";
 	} catch (err) {
 		errorEl.textContent = t("connection_error", { error: err.message });
