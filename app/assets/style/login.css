@@ -94,9 +94,7 @@ button:disabled {
 	background: transparent;
 	font-size: 1.05rem;
 	font-weight: 500;
-	transition:
-		color 0.15s,
-		border-color 0.15s;
+	transition: color 0.15s, border-color 0.15s;
 }
 .tab-btn.active {
 	color: var(--text);
@@ -131,10 +129,7 @@ button:disabled {
 	text-align: center;
 	font-size: 0.92rem;
 	color: var(--muted);
-	transition:
-		border-color 0.15s,
-		background 0.15s,
-		color 0.15s;
+	transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 .upload-zone:hover,
 .upload-zone.active {
@@ -194,9 +189,7 @@ button:disabled {
 	border-radius: 10px;
 	font-size: 0.95rem;
 	font-weight: 500;
-	transition:
-		filter 0.15s,
-		opacity 0.15s;
+	transition: filter 0.15s, opacity 0.15s;
 }
 .btn-main:hover:not(:disabled) {
 	filter: brightness(1.08);

@@ -454,9 +454,7 @@ button:disabled {
 }
 .pp-pane-items .pp-item-sub {
 	white-space: normal;
-	overflow: visible;
 	text-overflow: clip;
-}
 .pp-section-title {
 	margin: 0 0 4px;
 	font-size: 15px;
